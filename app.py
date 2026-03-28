@@ -205,11 +205,19 @@ if check_password(): # 로그인이 성공해야 아래 화면이 보입니다.
                             pdf.cell(0, 7, f"{r['검사일시'].strftime('%Y-%m-%d')}: {r['판정 수준']} | 오전:{r['오전 ECW (A)']:.3f} | 오후:{r['오후 ECW (B)']:.3f}", ln=True)
                         
                         # 개별 PDF 다운로드 버튼
+                      # 1. 파일 이름에서 날짜 정보 추출 (예: LEBIA_260328.xlsx -> 260328)
+                        import os
+                        raw_filename = uploaded_file.name
+                        # 확장자 제거하고, 언더바(_)로 나눈 뒤 마지막 부분 가져오기
+                        file_date = os.path.splitext(raw_filename)[0].split('_')[-1] 
+
+                        # 2. 개별 PDF 다운로드 버튼
                         pdf_bytes = bytes(pdf.output())
                         st.download_button(
                             label=f"📥 {patient_name} PDF 리포트 다운로드",
                             data=pdf_bytes,
-                            file_name=f"리포트_{patient_name}.pdf",
+                            # 파일명에 날짜 정보(file_date)를 추가함
+                            file_name=f"리포트_{patient_name}_{file_date}.pdf", 
                             mime="application/pdf",
                             key=f"pdf_{patient_name}"
                         )
