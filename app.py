@@ -27,7 +27,6 @@ def safe_fmt(value, fmt=".4f"):
 # --- 분석 로직 ---
 def analyze_data(df_raw, sheet_name):
     df = df_raw.copy()
-    # 컬럼명 전처리
     df.columns = df.columns.astype(str).str.replace(" ", "")
 
     col_map = {
@@ -44,16 +43,13 @@ def analyze_data(df_raw, sheet_name):
             if key in raw_col:
                 df = df.rename(columns={raw_col: standard})
 
-    # 환측 판단 (시트명 기준)
     side = "우측" if "우측" in str(sheet_name) else "좌측"
     df["검사일시"] = pd.to_datetime(df["검사일시"], errors="coerce")
     df = df.dropna(subset=["검사일시"]).sort_values("검사일시")
     
-    # 환측/건측 배정
     df["환측"] = df["우측상지"] if side == "우측" else df["좌측상지"]
     df["건측"] = df["좌측상지"] if side == "우측" else df["우측상지"]
     
-    # 오전/오후 통합
     df["Time"] = df["검사일시"].dt.hour.apply(lambda h: "오전" if 4 <= h < 12 else "오후")
     df["Date"] = df["검사일시"].dt.date
     
@@ -66,7 +62,6 @@ def analyze_data(df_raw, sheet_name):
     daily["검사일시"] = pd.to_datetime(daily["Date"])
     daily["하지 평균"] = (daily["우측하지"] + daily["좌측하지"]) / 2
     
-    # 지표 계산
     b_arm = daily["환측 오전"].iloc[:3].mean()
     b_leg = daily["하지 평균"].iloc[:3].mean()
     b_trunk = daily["체간"].iloc[:3].mean()
@@ -129,21 +124,42 @@ if uploaded_file:
         'am_r7': r7["환측 오전"].max() - r7["환측 오전"].min()
     }
 
-    # --- 대시보드 박스 디자인 ---
+    # --- 대시보드 박스 디자인 (Syntax 수정 완료) ---
     c1, c2, c3 = st.columns(3)
     
     with c1:
         st.markdown(f"""
-            <div style="background-color: #E8F1FF; padding: 20px; border-radius: 15px; height: 135px;">
-                <h4 style="color: #0056B3; margin-top: 0;">🔵 당일 <span style="font-size: 14px; color: #666;">({latest['Date']})</span></h4>
-                <p style="color: #0056B3; font-size: 18px; font-weight: bold;">
-                    비율: {latest['ratio']:.3f} 이탈: {latest['AM_drift']:.4f}
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
+        <div style="background-color: #E8F1FF; padding: 20px; border-radius: 15px; height: 135px;">
+            <h4 style="color: #0056B3; margin: 0;">🔵 당일 <span style="font-size: 14px; color: #666;">({latest['Date']})</span></h4>
+            <p style="color: #0056B3; font-size: 18px; font-weight: bold; margin-top: 10px;">
+                비율: {latest['ratio']:.3f} 이탈: {latest['AM_drift']:.4f}
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
             
     with c2:
         st.markdown(f"""
-            <div style="background-color: #FFF9E1; padding: 20px; border-radius: 15px; height: 135px;">
-                <h4 style="color: #856404; margin-top: 0;">🟡 3일</h4>
-                <p
+        <div style="background-color: #FFF9E1; padding: 20px; border-radius: 15px; height: 135px;">
+            <h4 style="color: #856404; margin: 0;">🟡 3일</h4>
+            <p style="color: #856404; font-size: 18px; font-weight: bold; margin-top: 10px;">
+                실패: {stats['f3']}회 경고: {stats['w3']}회
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+            
+    with c3:
+        st.markdown(f"""
+        <div style="background-color: #FFE8E8; padding: 20px; border-radius: 15px; height: 135px;">
+            <h4 style="color: #A94442; margin: 0;">🔴 7일</h4>
+            <p style="color: #A94442; font-size: 15px; font-weight: bold; margin-top: 10px;">
+                CV: {stats['cv7']:.2f}% 오전변동: {stats['am_r7']:.4f}<br>
+                하지이탈: {latest['leg_drift']:.4f}
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # --- 그래프 ---
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), gridspec_kw={'height_ratios': [1.8, 1]})
+    ax1.plot(df["검사일시"], df["환측 오전"], 'o-', color='#FF9999', label="환측 오전", linewidth=2, markersize=6)
+    ax1.plot(df["검사일시"], df["환측 오후"], '^-', color='#FF0000', label="환측 오후", linewidth=1.5)
+    ax1.plot(df["검사일시"], df["건측 오전"], 's--', color='#ADD8E6', alpha=0.5, label="건측 오전")
