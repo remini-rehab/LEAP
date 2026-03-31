@@ -85,6 +85,7 @@ if uploaded_file:
     df, b_arm, b_leg, b_trunk = analyze_data(pd.read_excel(xls, sheet_name=selected), selected)
     latest = df.iloc[-1]
     r3, r7 = df.tail(3), df.tail(7)
+    
     stats = {
         'f3': int((r3["night_recovery"] >= 0).sum()),
         'w3': int((r3["ratio"] > 1.02).sum()),
@@ -92,9 +93,13 @@ if uploaded_file:
         'am_r7': r7["환측 오전"].max() - r7["환측 오전"].min()
     }
 
-    # --- 에러 방지용 대시보드 카드 (단일 따옴표 사용) ---
+    # --- 에러 방지를 위해 문자열 포맷을 안전하게 수정 ---
     c1, c2, c3 = st.columns(3)
     
     # 당일 카드
+    date_str = str(latest["Date_Key"])
+    ratio_val = f"{latest['ratio']:.3f}"
+    drift_val = f"{latest['AM_drift']:.4f}"
+    
     c1.markdown(f'<div style="background-color: #E8F1FF; padding: 18px; border-radius: 15px; height: 145px; border: 1px solid #D0E2FF;">'
-                f'<h4 style="color: #0056B3; margin: 0; font-size: 1.2rem;">🔵 당일 <span style="font-size: 0.85rem; color: #555;">({latest["Date_Key"]})</span></h4>
+                f'<h4
