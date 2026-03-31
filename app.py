@@ -19,29 +19,17 @@ if os.path.exists(FONT_PATH):
         pass
 plt.rcParams["axes.unicode_minus"] = False
 
-# --- 유틸리티 함수 ---
-def safe_fmt(value, fmt=".4f"):
-    if pd.isna(value): return "-"
-    return format(float(value), fmt)
-
 # --- 분석 로직 ---
 def analyze_data(df_raw, sheet_name):
     df = df_raw.copy()
     df.columns = df.columns.astype(str).str.replace(" ", "")
-
     col_map = {
-        "우측상지세포외수분비": "우측상지",
-        "좌측상지세포외수분비": "좌측상지",
-        "체간세포외수분비": "체간",
-        "우측하지세포외수분비": "우측하지",
-        "좌측하지세포외수분비": "좌측하지",
-        "검사일시": "검사일시"
+        "우측상지세포외수분비": "우측상지", "좌측상지세포외수분비": "좌측상지",
+        "체간세포외수분비": "체간", "우측하지세포외수분비": "우측하지", "좌측하지세포외수분비": "좌측하지"
     }
-    
     for raw_col in df.columns:
         for key, standard in col_map.items():
-            if key in raw_col:
-                df = df.rename(columns={raw_col: standard})
+            if key in raw_col: df = df.rename(columns={raw_col: standard})
 
     side = "우측" if "우측" in str(sheet_name) else "좌측"
     df["검사일시"] = pd.to_datetime(df["검사일시"], errors="coerce")
@@ -75,7 +63,7 @@ def analyze_data(df_raw, sheet_name):
     
     return daily, b_arm, b_leg, b_trunk
 
-# --- PDF 리포트 생성 함수 ---
+# --- PDF 리포트 생성 ---
 def build_pdf(patient_name, report_date, latest, stats, fig):
     pdf = FPDF()
     pdf.add_page()
@@ -83,7 +71,6 @@ def build_pdf(patient_name, report_date, latest, stats, fig):
     if os.path.exists(FONT_PATH):
         pdf.add_font("Nanum", "", FONT_PATH, uni=True)
         pdf_font = "Nanum"
-    
     pdf.set_font(pdf_font, "", 16)
     pdf.cell(0, 10, f"LEAP 림프 정밀 분석 리포트 - {patient_name}", ln=1, align="C")
     pdf.set_font(pdf_font, "", 11)
@@ -124,37 +111,38 @@ if uploaded_file:
         'am_r7': r7["환측 오전"].max() - r7["환측 오전"].min()
     }
 
-    # --- 대시보드 박스 디자인 (Syntax 수정 완료) ---
+    # --- [디자인 수정 섹션] 줄바꿈 방지 및 여백 조정 ---
     c1, c2, c3 = st.columns(3)
     
     with c1:
         st.markdown(f"""
-        <div style="background-color: #E8F1FF; padding: 20px; border-radius: 15px; height: 135px;">
-            <h4 style="color: #0056B3; margin: 0;">🔵 당일 <span style="font-size: 14px; color: #666;">({latest['Date']})</span></h4>
-            <p style="color: #0056B3; font-size: 18px; font-weight: bold; margin-top: 10px;">
-                비율: {latest['ratio']:.3f} 이탈: {latest['AM_drift']:.4f}
-            </p>
+        <div style="background-color: #E8F1FF; padding: 18px; border-radius: 15px; height: 145px; border: 1px solid #D0E2FF;">
+            <h4 style="color: #0056B3; margin: 0; font-size: 1.2rem;">🔵 당일 <span style="font-size: 0.85rem; color: #555;">({latest['Date']})</span></h4>
+            <div style="margin-top: 15px;">
+                <p style="color: #0056B3; font-size: 1.1rem; font-weight: bold; margin-bottom: 5px;">비율: {latest['ratio']:.3f}</p>
+                <p style="color: #0056B3; font-size: 1.1rem; font-weight: bold; margin: 0;">이탈: {latest['AM_drift']:.4f}</p>
+            </div>
         </div>
         """, unsafe_allow_html=True)
             
     with c2:
         st.markdown(f"""
-        <div style="background-color: #FFF9E1; padding: 20px; border-radius: 15px; height: 135px;">
-            <h4 style="color: #856404; margin: 0;">🟡 3일</h4>
-            <p style="color: #856404; font-size: 18px; font-weight: bold; margin-top: 10px;">
-                실패: {stats['f3']}회 경고: {stats['w3']}회
-            </p>
+        <div style="background-color: #FFF9E1; padding: 18px; border-radius: 15px; height: 145px; border: 1px solid #FBE8A6;">
+            <h4 style="color: #856404; margin: 0; font-size: 1.2rem;">🟡 3일</h4>
+            <div style="margin-top: 25px;">
+                <p style="color: #856404; font-size: 1.1rem; font-weight: bold; margin: 0;">실패: {stats['f3']}회  경고: {stats['w3']}회</p>
+            </div>
         </div>
         """, unsafe_allow_html=True)
             
     with c3:
         st.markdown(f"""
-        <div style="background-color: #FFE8E8; padding: 20px; border-radius: 15px; height: 135px;">
-            <h4 style="color: #A94442; margin: 0;">🔴 7일</h4>
-            <p style="color: #A94442; font-size: 15px; font-weight: bold; margin-top: 10px;">
-                CV: {stats['cv7']:.2f}% 오전변동: {stats['am_r7']:.4f}<br>
-                하지이탈: {latest['leg_drift']:.4f}
-            </p>
+        <div style="background-color: #FFE8E8; padding: 18px; border-radius: 15px; height: 145px; border: 1px solid #FFD1D1;">
+            <h4 style="color: #A94442; margin: 0; font-size: 1.2rem;">🔴 7일</h4>
+            <div style="margin-top: 12px; line-height: 1.4;">
+                <p style="color: #A94442; font-size: 0.95rem; font-weight: bold; margin: 0;">CV: {stats['cv7']:.2f}%  오전변동: {stats['am_r7']:.4f}</p>
+                <p style="color: #A94442; font-size: 1.0rem; font-weight: bold; margin-top: 4px;">하지이탈: {latest['leg_drift']:.4f}</p>
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -163,3 +151,26 @@ if uploaded_file:
     ax1.plot(df["검사일시"], df["환측 오전"], 'o-', color='#FF9999', label="환측 오전", linewidth=2, markersize=6)
     ax1.plot(df["검사일시"], df["환측 오후"], '^-', color='#FF0000', label="환측 오후", linewidth=1.5)
     ax1.plot(df["검사일시"], df["건측 오전"], 's--', color='#ADD8E6', alpha=0.5, label="건측 오전")
+    ax1.axhline(b_arm, color='red', linestyle=':', alpha=0.4, label="Baseline")
+    warns = df[df["ratio"] > 1.02]
+    if not warns.empty:
+        ax1.scatter(warns["검사일시"], warns["환측 오전"] + 0.0006, marker='*', color='red', s=250, zorder=10)
+    ax1.set_title("상지 동태 분석 (★: 위험 경계치 초과)", fontsize=13, weight='bold')
+    ax1.legend(loc='upper left', bbox_to_anchor=(1, 1)); ax1.grid(True, alpha=0.2)
+    
+    ax2.plot(df["검사일시"], df["leg_drift"], 'o-', color='purple', label="하지 이탈", markersize=5)
+    ax2.plot(df["검사일시"], df["trunk_drift"], 's-', color='green', label="체간 이탈", markersize=5)
+    ax2.axhline(0, color='black', linewidth=1); ax2.set_title("전신 기준선 이탈 추이", fontsize=11)
+    ax2.legend(loc='upper left', bbox_to_anchor=(1, 1)); ax2.grid(True, alpha=0.2)
+    st.pyplot(fig)
+
+    # 리포트 출력 버튼
+    st.markdown("---")
+    p_name = str(selected).split('_')[0]
+    pdf_data = build_pdf(p_name, str(latest['Date']), latest, stats, fig)
+    st.download_button(
+        label=f"📥 [{p_name}] 정밀 리포트 다운로드 (PDF)",
+        data=pdf_data,
+        file_name=f"LEAP_리포트_{p_name}_{latest['Date']}.pdf",
+        mime="application/pdf"
+    )
