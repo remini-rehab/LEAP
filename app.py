@@ -24,13 +24,12 @@ def safe_fmt(value, fmt=".4f"):
     if pd.isna(value): return "-"
     return format(float(value), fmt)
 
-# --- 분석 로직 (에러 수정: 컬럼 매핑 강화) ---
+# --- 분석 로직 ---
 def analyze_data(df_raw, sheet_name):
     df = df_raw.copy()
-    # 컬럼명의 공백 제거 및 문자열 변환
+    # 컬럼명 전처리
     df.columns = df.columns.astype(str).str.replace(" ", "")
 
-    # 기계 원본 컬럼명을 표준 컬럼명으로 매핑
     col_map = {
         "우측상지세포외수분비": "우측상지",
         "좌측상지세포외수분비": "좌측상지",
@@ -40,20 +39,11 @@ def analyze_data(df_raw, sheet_name):
         "검사일시": "검사일시"
     }
     
-    # 엑셀 컬럼 중 매핑 대상이 있으면 이름을 변경
     for raw_col in df.columns:
         for key, standard in col_map.items():
             if key in raw_col:
                 df = df.rename(columns={raw_col: standard})
 
-    # 필수 컬럼 존재 확인
-    required = ["우측상지", "좌측상지", "체간", "우측하지", "좌측하지", "검사일시"]
-    for r in required:
-        if r not in df.columns:
-            st.error(f"⚠️ 엑셀에 '{r}' 관련 데이터가 없습니다. 컬럼명을 확인해주세요.")
-            st.stop()
-
-    # 시트명에서 환측(우측/좌측) 추출
     side = "우측" if "우측" in str(sheet_name) else "좌측"
     df["검사일시"] = pd.to_datetime(df["검사일시"], errors="coerce")
     df = df.dropna(subset=["검사일시"]).sort_values("검사일시")
@@ -62,7 +52,7 @@ def analyze_data(df_raw, sheet_name):
     df["환측"] = df["우측상지"] if side == "우측" else df["좌측상지"]
     df["건측"] = df["좌측상지"] if side == "우측" else df["우측상지"]
     
-    # 오전/오후 통합 로직
+    # 오전/오후 통합
     df["Time"] = df["검사일시"].dt.hour.apply(lambda h: "오전" if 4 <= h < 12 else "오후")
     df["Date"] = df["검사일시"].dt.date
     
@@ -138,16 +128,41 @@ if uploaded_file:
         'am_r7': r7["환측 오전"].max() - r7["환측 오전"].min()
     }
 
-    # 대시보드 박스 디자인
+    # --- 대시보드 디자인 (따옴표 버그 수정 완료) ---
     c1, c2, c3 = st.columns(3)
+    
     with c1:
-        st.markdown(f'<div style="background-color: #E8F1FF; padding: 20px; border-radius: 15px; height: 135px;"><h4 style="color: #0056B3; margin-top: 0;">🔵 당일 <span style="font-size: 14px; color: #666;">({latest["Date"]})</span></h4><p style="color: #0056B3; font-size: 18px; font-weight: bold;">비율: {latest["ratio']:.3f} 이탈: {latest["AM_drift"]:.4f}</p></div>', unsafe_allow_html=True)
+        st.markdown(f"""
+            <div style="background-color: #E8F1FF; padding: 20px; border-radius: 15px; height: 135px;">
+                <h4 style="color: #0056B3; margin-top: 0;">🔵 당일 <span style="font-size: 14px; color: #666;">({latest['Date']})</span></h4>
+                <p style="color: #0056B3; font-size: 18px; font-weight: bold;">
+                    비율: {latest['ratio']:.3f} 이탈: {latest['AM_drift']:.4f}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            
     with c2:
-        st.markdown(f'<div style="background-color: #FFF9E1; padding: 20px; border-radius: 15px; height: 135px;"><h4 style="color: #856404; margin-top: 0;">🟡 3일</h4><p style="color: #856404; font-size: 18px; font-weight: bold;">실패: {stats["f3"]}회 경고: {stats["w3"]}회</p></div>', unsafe_allow_html=True)
+        st.markdown(f"""
+            <div style="background-color: #FFF9E1; padding: 20px; border-radius: 15px; height: 135px;">
+                <h4 style="color: #856404; margin-top: 0;">🟡 3일</h4>
+                <p style="color: #856404; font-size: 18px; font-weight: bold;">
+                    실패: {stats['f3']}회 경고: {stats['w3']}회
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            
     with c3:
-        st.markdown(f'<div style="background-color: #FFE8E8; padding: 20px; border-radius: 15px; height: 135px;"><h4 style="color: #A94442; margin-top: 0;">🔴 7일</h4><p style="color: #A94442; font-size: 15px; font-weight: bold;">CV: {stats["cv7"]:.2f}% 오전변동: {stats["am_r7']:.4f}<br>하지이탈: {latest["leg_drift"]:.4f}</p></div>', unsafe_allow_html=True)
+        st.markdown(f"""
+            <div style="background-color: #FFE8E8; padding: 20px; border-radius: 15px; height: 135px;">
+                <h4 style="color: #A94442; margin-top: 0;">🔴 7일</h4>
+                <p style="color: #A94442; font-size: 15px; font-weight: bold;">
+                    CV: {stats['cv7']:.2f}% 오전변동: {stats['am_r7']:.4f}<br>
+                    하지이탈: {latest['leg_drift']:.4f}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
 
-    # 그래프
+    # --- 그래프 ---
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), gridspec_kw={'height_ratios': [1.8, 1]})
     ax1.plot(df["검사일시"], df["환측 오전"], 'o-', color='#FF9999', label="환측 오전", linewidth=2, markersize=6)
     ax1.plot(df["검사일시"], df["환측 오후"], '^-', color='#FF0000', label="환측 오후", linewidth=1.5)
@@ -176,8 +191,4 @@ if uploaded_file:
     patient_name = str(selected).split('_')[0]
     pdf_bytes = build_pdf(patient_name, str(latest['Date']), latest, stats, fig)
     st.download_button(
-        label=f"📥 [{patient_name}] 정밀 리포트 다운로드 (PDF)",
-        data=pdf_bytes,
-        file_name=f"LEAP_리포트_{patient_name}_{latest['Date']}.pdf",
-        mime="application/pdf"
-    )
+        label=f"📥 [{patient_name}] 정밀 리포트 다운
