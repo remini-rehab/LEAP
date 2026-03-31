@@ -548,7 +548,7 @@ if check_password():
                     st.success("✅ 모든 환자의 분석 및 PDF 리포트 생성이 완료되었습니다!")
                     st.markdown("### 📊 전체 환자 현황 요약판")
 
-                  summary_df = pd.DataFrame(summary_data).sort_values(
+                    summary_df = pd.DataFrame(summary_data).sort_values(
                         by=["위험도", "환자명"], ascending=[False, True]
                     )
                     
