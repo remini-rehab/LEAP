@@ -72,7 +72,7 @@ def analyze_data(df_raw, sheet_name):
     
     return daily, b_arm, b_leg, b_trunk
 
-# --- 리포트 생성 함수 ---
+# --- PDF 리포트 생성 함수 ---
 def build_pdf(patient_name, report_date, latest, stats, fig):
     pdf = FPDF()
     pdf.add_page()
@@ -104,15 +104,7 @@ if uploaded_file:
         'am_r7': r7["환측 오전"].max() - r7["환측 오전"].min()
     }
 
-    # --- 디자인 박스 섹션 (Syntax Error 수정 완료) ---
+    # --- 대시보드 (삼중 따옴표 오류 방지를 위한 구조 최적화) ---
     c1, c2, c3 = st.columns(3)
-    with c1:
-        st.markdown(f"""<div style="background-color: #E8F1FF; padding: 18px; border-radius: 15px; height: 145px; border: 1px solid #D0E2FF;">
-            <h4 style="color: #0056B3; margin: 0; font-size: 1.2rem;">🔵 당일 <span style="font-size: 0.85rem; color: #555;">({latest['Date_Key']})</span></h4>
-            <div style="margin-top: 15px;">
-                <p style="color: #0056B3; font-size: 1.1rem; font-weight: bold; margin-bottom: 5px;">비율: {latest['ratio']:.3f}</p>
-                <p style="color: #0056B3; font-size: 1.1rem; font-weight: bold; margin: 0;">이탈: {latest['AM_drift']:.4f}</p>
-            </div>
-        </div>""", unsafe_allow_html=True)
-    with c2:
-        st.markdown(f"""<div style="background-color: #FFF9E1; padding: 18px; border-radius: 15px; height: 145px;
+    
+    c1.markdown(f"""
