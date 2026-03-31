@@ -9,97 +9,98 @@ import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 from fpdf import FPDF
 
-# 1. 폰트 및 기본 설정
+# 1. 폰트 설정
 FONT_PATH = "NanumBarunGothic.ttf"
 if os.path.exists(FONT_PATH):
     try:
         fm.fontManager.addfont(FONT_PATH)
         plt.rc("font", family="NanumBarunGothic")
-    except Exception:
-        pass
+    except Exception: pass
 plt.rcParams["axes.unicode_minus"] = False
 
 # --- 분석 로직 ---
 def analyze_data(df_raw, sheet_name):
     df = df_raw.copy()
-    df.columns = df.columns.astype(str).str.replace(" ", "")
-    col_map = {
-        "우측상지세포외수분비": "우측상지", "좌측상지세포외수분비": "좌측상지",
-        "체간세포외수분비": "체간", "우측하지세포외수분비": "우측하지", "좌측하지세포외수분비": "좌측하지"
+    df.columns = df.columns.astype(str).str.replace(" ", "").str.replace("\n", "")
+
+    target_cols = {
+        "우측상지": ["우측상지세포외수분비", "우측상지", "RightArm"],
+        "좌측상지": ["좌측상지세포외수분비", "좌측상지", "LeftArm"],
+        "체간": ["체간세포외수분비", "체간", "Trunk"],
+        "우측하지": ["우측하지세포외수분비", "우측하지", "RightLeg"],
+        "좌측하지": ["좌측하지세포외수분비", "좌측하지", "LeftLeg"],
+        "검사일시": ["검사일시", "Date", "DateTime"]
     }
-    for raw_col in df.columns:
-        for key, standard in col_map.items():
-            if key in raw_col: df = df.rename(columns={raw_col: standard})
+    
+    for std_name, candidates in target_cols.items():
+        for col in df.columns:
+            if any(cand in col for cand in candidates):
+                df = df.rename(columns={col: std_name})
+                break
 
     side = "우측" if "우측" in str(sheet_name) else "좌측"
     df["검사일시"] = pd.to_datetime(df["검사일시"], errors="coerce")
-    df = df.dropna(subset=["검사일시"]).sort_values("검사일시")
+    df = df.dropna(subset=["검사일시", "우측상지", "좌측상지"]).sort_values("검사일시")
     
+    if len(df) == 0:
+        st.error("분석 가능한 데이터가 부족합니다.")
+        st.stop()
+
     df["환측"] = df["우측상지"] if side == "우측" else df["좌측상지"]
     df["건측"] = df["좌측상지"] if side == "우측" else df["우측상지"]
-    
     df["Time"] = df["검사일시"].dt.hour.apply(lambda h: "오전" if 4 <= h < 12 else "오후")
-    df["Date"] = df["검사일시"].dt.date
+    df["Date_Key"] = df["검사일시"].dt.date
     
-    am = df[df["Time"] == "오전"].groupby("Date").first()
-    pm = df[df["Time"] == "오후"].groupby("Date").last()
+    am = df[df["Time"] == "오전"].groupby("Date_Key").first()
+    pm = df[df["Time"] == "오후"].groupby("Date_Key").last()
     
     daily = pd.merge(am[["환측", "건측", "우측하지", "좌측하지", "체간"]], 
-                     pm[["환측", "건측"]], on="Date", how="outer", suffixes=(" 오전", " 오후"))
-    daily = daily.sort_index().reset_index()
-    daily["검사일시"] = pd.to_datetime(daily["Date"])
+                     pm[["환측", "건측"]], on="Date_Key", how="outer", suffixes=(" 오전", " 오후"))
+    daily = daily.sort_index().reset_index().ffill().bfill()
+    daily["검사일시"] = pd.to_datetime(daily["Date_Key"])
     daily["하지 평균"] = (daily["우측하지"] + daily["좌측하지"]) / 2
     
-    b_arm = daily["환측 오전"].iloc[:3].mean()
-    b_leg = daily["하지 평균"].iloc[:3].mean()
-    b_trunk = daily["체간"].iloc[:3].mean()
+    b_arm = daily["환측 오전"].iloc[:3].mean() if len(daily) >= 3 else daily["환측 오전"].iloc[0]
+    b_leg = daily["하지 평균"].iloc[:3].mean() if len(daily) >= 3 else daily["하지 평균"].iloc[0]
+    b_trunk = daily["체간"].iloc[:3].mean() if len(daily) >= 3 else daily["체간"].iloc[0]
     
     daily["ratio"] = daily["환측 오전"] / daily["건측 오전"]
     daily["AM_drift"] = daily["환측 오전"] - b_arm
-    daily["day_gain"] = daily["환측 오후"] - daily["환측 오전"]
     daily["night_recovery"] = daily["환측 오전"].shift(-1) - daily["환측 오후"]
     daily["leg_drift"] = daily["하지 평균"] - b_leg
     daily["trunk_drift"] = daily["체간"] - b_trunk
     
     return daily, b_arm, b_leg, b_trunk
 
-# --- PDF 리포트 생성 ---
+# --- PDF 생성 함수 ---
 def build_pdf(patient_name, report_date, latest, stats, fig):
     pdf = FPDF()
     pdf.add_page()
-    pdf_font = "Arial"
     if os.path.exists(FONT_PATH):
         pdf.add_font("Nanum", "", FONT_PATH, uni=True)
-        pdf_font = "Nanum"
-    pdf.set_font(pdf_font, "", 16)
-    pdf.cell(0, 10, f"LEAP 림프 정밀 분석 리포트 - {patient_name}", ln=1, align="C")
-    pdf.set_font(pdf_font, "", 11)
-    pdf.cell(0, 8, f"분석일(당일 기준): {report_date}", ln=1)
+        pdf.set_font("Nanum", "", 14)
+    else:
+        pdf.set_font("Arial", "B", 14)
+    pdf.cell(0, 10, f"LEAP Analysis Report: {patient_name}", ln=True, align='C')
     pdf.ln(5)
-    pdf.set_font(pdf_font, "", 12)
-    pdf.cell(0, 8, "[1/3/7일 통합 분석 지표]", ln=1)
-    pdf.set_font(pdf_font, "", 10)
-    pdf.cell(0, 7, f"- 당일 비율: {latest['ratio']:.3f} / 기준선 이탈: {latest['AM_drift']:.4f}", ln=1)
-    pdf.cell(0, 7, f"- 최근 3일 회복 실패: {stats['f3']}회 / 경고(>1.02): {stats['w3']}회", ln=1)
-    pdf.cell(0, 7, f"- 7일 비율 CV(불안정성): {stats['cv7']:.2f}% / 오전 변동폭(기초 체력): {stats['am_r7']:.4f}", ln=1)
-    pdf.cell(0, 7, f"- 하지 기준선 이탈: {latest['leg_drift']:.4f} / 체간 기준선 이탈: {latest['trunk_drift']:.4f}", ln=1)
-    pdf.ln(5)
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
-        fig.savefig(tmpfile.name, format="png", bbox_inches="tight", dpi=150)
-        pdf.image(tmpfile.name, x=10, y=None, w=190)
-    return pdf.output(dest="S").encode("latin-1")
+    text = (f"- Ratio: {latest['ratio']:.3f} / AM Drift: {latest['AM_drift']:.4f}\n"
+            f"- 3D Fail: {stats['f3']} / 3D Warning: {stats['w3']}\n"
+            f"- 7D CV: {stats['cv7']:.2f}% / AM Range: {stats['am_r7']:.4f}\n"
+            f"- Leg Drift: {latest['leg_drift']:.4f} / Trunk Drift: {latest['trunk_drift']:.4f}")
+    pdf.multi_cell(0, 8, text)
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
+        fig.savefig(tmp.name, format="png", bbox_inches="tight", dpi=100)
+        pdf.image(tmp.name, x=10, y=80, w=190)
+    return bytes(pdf.output())
 
-# --- 메인 실행부 ---
+# --- 메인 UI ---
 st.title("🏥 LEAP 정밀 분석 시스템")
-uploaded_file = st.file_uploader("멀티시트 엑셀 업로드 (.xlsx)", type=["xlsx"])
+uploaded_file = st.file_uploader("엑셀 업로드", type=["xlsx"])
 
 if uploaded_file:
     xls = pd.ExcelFile(uploaded_file)
-    sheet_names = xls.sheet_names
-    selected = st.selectbox("환자 선택 (시트명)", sheet_names)
-    
-    raw_df = pd.read_excel(xls, sheet_name=selected)
-    df, b_arm, b_leg, b_trunk = analyze_data(raw_df, selected)
+    selected = st.selectbox("환자 선택", xls.sheet_names)
+    df, b_arm, b_leg, b_trunk = analyze_data(pd.read_excel(xls, sheet_name=selected), selected)
     
     latest = df.iloc[-1]
     r3 = df.tail(3); r7 = df.tail(7)
@@ -107,70 +108,53 @@ if uploaded_file:
     stats = {
         'f3': int((r3["night_recovery"] >= 0).sum()),
         'w3': int((r3["ratio"] > 1.02).sum()),
-        'cv7': (r7["ratio"].std() / r7["ratio"].mean()) * 100 if r7["ratio"].mean() != 0 else 0,
+        'cv7': (r7["ratio"].std() / r7["ratio"].mean()) * 100 if len(r7) > 1 else 0,
         'am_r7': r7["환측 오전"].max() - r7["환측 오전"].min()
     }
 
-    # --- [디자인 수정 섹션] 줄바꿈 방지 및 여백 조정 ---
+    # 박스 레이아웃
     c1, c2, c3 = st.columns(3)
-    
     with c1:
-        st.markdown(f"""
-        <div style="background-color: #E8F1FF; padding: 18px; border-radius: 15px; height: 145px; border: 1px solid #D0E2FF;">
-            <h4 style="color: #0056B3; margin: 0; font-size: 1.2rem;">🔵 당일 <span style="font-size: 0.85rem; color: #555;">({latest['Date']})</span></h4>
-            <div style="margin-top: 15px;">
-                <p style="color: #0056B3; font-size: 1.1rem; font-weight: bold; margin-bottom: 5px;">비율: {latest['ratio']:.3f}</p>
-                <p style="color: #0056B3; font-size: 1.1rem; font-weight: bold; margin: 0;">이탈: {latest['AM_drift']:.4f}</p>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-            
+        st.markdown(f'<div style="background-color: #E8F1FF; padding: 18px; border-radius: 15px; height: 145px; border: 1px solid #D0E2FF;"><h4 style="color: #0056B3; margin: 0; font-size: 1.2rem;">🔵 당일 <span style="font-size: 0.85rem; color: #555;">({latest["Date_Key"]})</span></h4><div style="margin-top: 15px;"><p style="color: #0056B3; font-size: 1.1rem; font-weight: bold; margin-bottom: 5px;">비율: {latest["ratio"]:.3f}</p><p style="color: #0056B3; font-size: 1.1rem; font-weight: bold; margin: 0;">이탈: {latest["AM_drift"]:.4f}</p></div></div>', unsafe_allow_html=True)
     with c2:
-        st.markdown(f"""
-        <div style="background-color: #FFF9E1; padding: 18px; border-radius: 15px; height: 145px; border: 1px solid #FBE8A6;">
-            <h4 style="color: #856404; margin: 0; font-size: 1.2rem;">🟡 3일</h4>
-            <div style="margin-top: 25px;">
-                <p style="color: #856404; font-size: 1.1rem; font-weight: bold; margin: 0;">실패: {stats['f3']}회  경고: {stats['w3']}회</p>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-            
+        st.markdown(f'<div style="background-color: #FFF9E1; padding: 18px; border-radius: 15px; height: 145px; border: 1px solid #FBE8A6;"><h4 style="color: #856404; margin: 0; font-size: 1.2rem;">🟡 3일</h4><div style="margin-top: 25px;"><p style="color: #856404; font-size: 1.1rem; font-weight: bold; margin: 0;">실패: {stats["f3"]}회  경고: {stats["w3"]}회</p></div></div>', unsafe_allow_html=True)
     with c3:
-        st.markdown(f"""
-        <div style="background-color: #FFE8E8; padding: 18px; border-radius: 15px; height: 145px; border: 1px solid #FFD1D1;">
-            <h4 style="color: #A94442; margin: 0; font-size: 1.2rem;">🔴 7일</h4>
-            <div style="margin-top: 12px; line-height: 1.4;">
-                <p style="color: #A94442; font-size: 0.95rem; font-weight: bold; margin: 0;">CV: {stats['cv7']:.2f}%  오전변동: {stats['am_r7']:.4f}</p>
-                <p style="color: #A94442; font-size: 1.0rem; font-weight: bold; margin-top: 4px;">하지이탈: {latest['leg_drift']:.4f}</p>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<div style="background-color: #FFE8E8; padding: 18px; border-radius: 15px; height: 145px; border: 1px solid #FFD1D1;"><h4 style="color: #A94442; margin: 0; font-size: 1.2rem;">🔴 7일</h4><div style="margin-top: 12px; line-height: 1.4;"><p style="color: #A94442; font-size: 0.95rem; font-weight: bold; margin: 0;">CV: {stats["cv7"]:.2f}%  오전변동: {stats["am_r7"]:.4f}</p><p style="color: #A94442; font-size: 1.0rem; font-weight: bold; margin-top: 4px;">하지이탈: {latest["leg_drift"]:.4f}</p></div></div>', unsafe_allow_html=True)
 
-    # --- 그래프 ---
+    # --- 그래프 섹션: 1.02 초과 별표 마킹 보강 ---
+    st.write("---")
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), gridspec_kw={'height_ratios': [1.8, 1]})
-    ax1.plot(df["검사일시"], df["환측 오전"], 'o-', color='#FF9999', label="환측 오전", linewidth=2, markersize=6)
-    ax1.plot(df["검사일시"], df["환측 오후"], '^-', color='#FF0000', label="환측 오후", linewidth=1.5)
+    
+    # 상지 분석 그래프
+    ax1.plot(df["검사일시"], df["환측 오전"], 'o-', color='#FF9999', label="환측 오전", linewidth=2)
+    ax1.plot(df["검사일시"], df["환측 오후"], '^-', color='#FF0000', label="환측 오후", alpha=0.7)
     ax1.plot(df["검사일시"], df["건측 오전"], 's--', color='#ADD8E6', alpha=0.5, label="건측 오전")
-    ax1.axhline(b_arm, color='red', linestyle=':', alpha=0.4, label="Baseline")
+    ax1.axhline(b_arm, color='gray', linestyle=':', alpha=0.5, label="Baseline")
+    
+    # ★ 1.02 초과 지점 강조 (양측 비율 기준)
     warns = df[df["ratio"] > 1.02]
     if not warns.empty:
-        ax1.scatter(warns["검사일시"], warns["환측 오전"] + 0.0006, marker='*', color='red', s=250, zorder=10)
-    ax1.set_title("상지 동태 분석 (★: 위험 경계치 초과)", fontsize=13, weight='bold')
-    ax1.legend(loc='upper left', bbox_to_anchor=(1, 1)); ax1.grid(True, alpha=0.2)
+        ax1.scatter(warns["검사일시"], warns["환측 오전"] + 0.0006, 
+                    marker='*', color='red', s=250, zorder=10, label="Ratio > 1.02")
+        # 수직 점선 추가로 가독성 증대
+        for d in warns["검사일시"]:
+            ax1.axvline(x=d, color='red', linestyle=':', alpha=0.3)
     
-    ax2.plot(df["검사일시"], df["leg_drift"], 'o-', color='purple', label="하지 이탈", markersize=5)
-    ax2.plot(df["검사일시"], df["trunk_drift"], 's-', color='green', label="체간 이탈", markersize=5)
-    ax2.axhline(0, color='black', linewidth=1); ax2.set_title("전신 기준선 이탈 추이", fontsize=11)
-    ax2.legend(loc='upper left', bbox_to_anchor=(1, 1)); ax2.grid(True, alpha=0.2)
+    ax1.set_title("상지 동태 분석 (★: 위험 경계치 1.02 초과)", fontsize=13, weight='bold')
+    ax1.legend(loc='upper left', bbox_to_anchor=(1, 1))
+    ax1.grid(True, alpha=0.2)
+    
+    # 전신 이탈 그래프
+    ax2.plot(df["검사일시"], df["leg_drift"], 'o-', color='purple', label="하지 이탈")
+    ax2.plot(df["검사일시"], df["trunk_drift"], 's-', color='green', label="체간 이탈")
+    ax2.axhline(0, color='black', linewidth=1)
+    ax2.set_title("전신 기준선 이탈 추이 (하지/체간)")
+    ax2.grid(True, alpha=0.2)
+    
     st.pyplot(fig)
 
-    # 리포트 출력 버튼
-    st.markdown("---")
+    # 리포트 다운로드
+    st.write("---")
     p_name = str(selected).split('_')[0]
-    pdf_data = build_pdf(p_name, str(latest['Date']), latest, stats, fig)
-    st.download_button(
-        label=f"📥 [{p_name}] 정밀 리포트 다운로드 (PDF)",
-        data=pdf_data,
-        file_name=f"LEAP_리포트_{p_name}_{latest['Date']}.pdf",
-        mime="application/pdf"
-    )
+    pdf_bytes = build_pdf(p_name, str(latest['Date_Key']), latest, stats, fig)
+    st.download_button(label=f"📥 [{p_name}] 리포트 다운로드", data=pdf_bytes, file_name=f"Report_{p_name}.pdf")
