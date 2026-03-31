@@ -93,13 +93,30 @@ if uploaded_file:
         'am_r7': r7["환측 오전"].max() - r7["환측 오전"].min()
     }
 
-    # --- 에러 방지를 위해 문자열 포맷을 안전하게 수정 ---
+    # --- 대시보드 카드 생성 (가장 안전한 HTML 결합 방식) ---
     c1, c2, c3 = st.columns(3)
     
-    # 당일 카드
-    date_str = str(latest["Date_Key"])
-    ratio_val = f"{latest['ratio']:.3f}"
-    drift_val = f"{latest['AM_drift']:.4f}"
-    
-    c1.markdown(f'<div style="background-color: #E8F1FF; padding: 18px; border-radius: 15px; height: 145px; border: 1px solid #D0E2FF;">'
-                f'<h4
+    # 🔵 당일 카드
+    card1_html = (
+        '<div style="background-color: #E8F1FF; padding: 18px; border-radius: 15px; height: 145px; border: 1px solid #D0E2FF;">'
+        '<h4 style="color: #0056B3; margin: 0; font-size: 1.2rem;">🔵 당일 <span style="font-size: 0.85rem; color: #555;">(' + str(latest["Date_Key"]) + ')</span></h4>'
+        '<div style="margin-top: 15px;">'
+        '<p style="color: #0056B3; font-size: 1.1rem; font-weight: bold; margin-bottom: 5px;">비율: ' + format(latest["ratio"], ".3f") + '</p>'
+        '<p style="color: #0056B3; font-size: 1.1rem; font-weight: bold; margin: 0;">이탈: ' + format(latest["AM_drift"], ".4f") + '</p>'
+        '</div></div>'
+    )
+    c1.markdown(card1_html, unsafe_allow_html=True)
+
+    # 🟡 3일 카드
+    card2_html = (
+        '<div style="background-color: #FFF9E1; padding: 18px; border-radius: 15px; height: 145px; border: 1px solid #FBE8A6;">'
+        '<h4 style="color: #856404; margin: 0; font-size: 1.2rem;">🟡 3일</h4>'
+        '<div style="margin-top: 25px;">'
+        '<p style="color: #856404; font-size: 1.1rem; font-weight: bold; margin: 0;">실패: ' + str(stats["f3"]) + '회  경고: ' + str(stats["w3"]) + '회</p>'
+        '</div></div>'
+    )
+    c2.markdown(card2_html, unsafe_allow_html=True)
+
+    # 🔴 7일 카드
+    card3_html = (
+        '<div style="background-color: #FFE8E8; padding: 18px; border-radius: 15px; height: 145px; border: 1px solid #FFD1D
