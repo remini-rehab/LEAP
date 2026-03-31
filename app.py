@@ -107,11 +107,30 @@ if uploaded_file:
     w3_txt = str(stats["w3"])
     c2.markdown(f'<div style="background-color:#FFF9E1;padding:18px;border-radius:15px;height:145px;border:1px solid #FBE8A6;"><h4 style="color:#856404;margin:0;font-size:1.2rem;">🟡 3일</h4><div style="margin-top:25px;"><p style="color:#856404;font-size:1.1rem;font-weight:bold;margin:0;">실패: {f3_txt}회  경고: {w3_txt}회</p></div></div>', unsafe_allow_html=True)
 
-    # 🔴 7일 카드
+  # 🔴 7일 카드 (줄 바꿈 및 오후 변동폭 로직 적용)
     cv_txt = f"{stats['cv7']:.2f}"
     am_r_txt = f"{stats['am_r7']:.4f}"
-    leg_d_txt = f"{latest['leg_drift']:.4f}"
-    c3.markdown(f'<div style="background-color:#FFE8E8;padding:18px;border-radius:15px;height:145px;border:1px solid #FFD1D1;"><h4 style="color:#A94442;margin:0;font-size:1.2rem;">🔴 7일</h4><div style="margin-top:12px;line-height:1.4;"><p style="color:#A94442;font-size:0.95rem;font-weight:bold;margin:0;">CV: {cv_txt}%  오전변동: {am_r_txt}</p><p style="color:#A94442;font-size:1.0rem;font-weight:bold;margin-top:4px;">하지이탈: {leg_d_txt}</p></div></div>', unsafe_allow_html=True)
+    
+    # 오후 변동폭 계산 (최근 7일 오후 측정값의 최대 - 최소)
+    r7_pm_data = df.tail(7)
+    pm_range_val = r7_pm_data["환측 오후"].max() - r7_pm_data["환측 오후"].min()
+    pm_v_txt = f"{pm_range_val:.4f}"
+    
+    # <br> 태그를 넣어 확실하게 줄을 나눴습니다.
+    c3.markdown(f"""
+        <div style="background-color:#FFE8E8; padding:18px; border-radius:15px; height:155px; border:1px solid #FFD1D1;">
+            <h4 style="color:#A94442; margin:0; font-size:1.2rem;">🔴 7일</h4>
+            <div style="margin-top:10px; line-height:1.6;">
+                <p style="color:#A94442; font-size:0.95rem; font-weight:bold; margin:0;">
+                    변동계수: {cv_txt}%<br>
+                    오전 변동폭: {am_r_txt}<br>
+                    <span style="font-size:1.0rem; margin-top:5px; display:inline-block;">
+                        오후 변동폭: {pm_v_txt}
+                    </span>
+                </p>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
     # --- 그래프 섹션 (모든 화살표, 별표 기능 포함) ---
     st.write("---")
