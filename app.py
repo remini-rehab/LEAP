@@ -1,4 +1,4 @@
-import os
+ï»¿import os
 import re
 import tempfile
 import zipfile
@@ -12,9 +12,9 @@ import matplotlib.font_manager as fm
 from fpdf import FPDF
 
 # ==========================================
-# 0. ±âº» ¼³Á¤
+# 0. ê¸°ë³¸ ì„¤ì •
 # ==========================================
-st.set_page_config(page_title="LEAP ¸²ÇÁºÎÁ¾ Á¤¹Ğ ºĞ¼® ½Ã½ºÅÛ", layout="wide")
+st.set_page_config(page_title="LEAP ë¦¼í”„ë¶€ì¢… ì •ë°€ ë¶„ì„ ì‹œìŠ¤í…œ", layout="wide")
 
 FONT_PATH = "NanumBarunGothic.ttf"
 if os.path.exists(FONT_PATH):
@@ -27,7 +27,7 @@ plt.rcParams["axes.unicode_minus"] = False
 
 
 # ==========================================
-# 1. °øÅë À¯Æ¿
+# 1. ê³µí†µ ìœ í‹¸
 # ==========================================
 def safe_mean(series):
     vals = pd.to_numeric(series, errors="coerce").dropna()
@@ -44,15 +44,15 @@ def safe_fmt(value, fmt=".4f", na="NA"):
 
 
 def severity_rank(label: str) -> int:
-    if "ÁøÇà¼º" in label:
+    if "ì§„í–‰ì„±" in label:
         return 5
-    if "È¥ÇÕÇü ¾ÇÈ­" in label:
+    if "í˜¼í•©í˜• ì•…í™”" in label:
         return 4
-    if "Àü½Å ºÎÁ¾" in label:
+    if "ì „ì‹  ë¶€ì¢…" in label:
         return 3
-    if "ÃÊ±â ¸²ÇÁ dysfunction" in label or "°æ°èÇü ¸²ÇÁºÎÁ¾" in label:
+    if "ì´ˆê¸° ë¦¼í”„ dysfunction" in label or "ê²½ê³„í˜• ë¦¼í”„ë¶€ì¢…" in label:
         return 2
-    if "ÁÖÀÇ" in label or "°æ°èÇü ºñ´ëÄª" in label:
+    if "ì£¼ì˜" in label or "ê²½ê³„í˜• ë¹„ëŒ€ì¹­" in label:
         return 1
     return 0
 
@@ -63,7 +63,7 @@ def extract_file_info(filename: str):
     raw_date = date_match.group(1) if date_match else None
 
     patient_name = stem[: stem.rfind(raw_date)].rstrip("_- ") if raw_date else stem
-    patient_name = patient_name if patient_name else "È¯ÀÚ"
+    patient_name = patient_name if patient_name else "í™˜ì"
 
     report_date = pd.Timestamp.today().strftime("%Y-%m-%d")
     if raw_date:
@@ -94,21 +94,21 @@ def check_password():
         st.session_state["password_entered"] = False
 
     if not st.session_state["password_entered"]:
-        st.title("?? ½Ã½ºÅÛ Á¢±Ù")
-        password = st.text_input("Á¢¼Ó ºñ¹Ğ¹øÈ£¸¦ ÀÔ·ÂÇÏ¼¼¿ä:", type="password")
-        if st.button("·Î±×ÀÎ"):
+        st.title("ğŸ”’ ì‹œìŠ¤í…œ ì ‘ê·¼")
+        password = st.text_input("ì ‘ì† ë¹„ë°€ë²ˆí˜¸ë¥¼ ì…ë ¥í•˜ì„¸ìš”:", type="password")
+        if st.button("ë¡œê·¸ì¸"):
             admin_pw = st.secrets.get("admin_password", None)
             if admin_pw is not None and password == admin_pw:
                 st.session_state["password_entered"] = True
                 st.rerun()
             else:
-                st.error("ºñ¹Ğ¹øÈ£°¡ Æ²·È½À´Ï´Ù.")
+                st.error("ë¹„ë°€ë²ˆí˜¸ê°€ í‹€ë ¸ìŠµë‹ˆë‹¤.")
         return False
     return True
 
 
 # ==========================================
-# 1-1. ÇØ¼® Ç¥½Ã À¯Æ¿
+# 1-1. í•´ì„ í‘œì‹œ ìœ í‹¸
 # ==========================================
 def calculate_slope(series):
     s = pd.to_numeric(series, errors="coerce").dropna()
@@ -123,20 +123,20 @@ def fmt_ratio_interp(x):
     if pd.isna(x):
         return "NA"
     if x >= 1.05:
-        return f"{x:.3f} (È®Áõ)"
+        return f"{x:.3f} (í™•ì¦)"
     elif x >= 1.02:
-        return f"{x:.3f} (°æ°è)"
-    return f"{x:.3f} (Á¤»ó)"
+        return f"{x:.3f} (ê²½ê³„)"
+    return f"{x:.3f} (ì •ìƒ)"
 
 
 def fmt_diff_interp(x):
     if pd.isna(x):
         return "NA"
     if x >= 0.004:
-        return f"{x:+.4f} (¡è Áõ°¡)"
+        return f"{x:+.4f} (â†‘ ì¦ê°€)"
     elif x <= -0.002:
-        return f"{x:+.4f} (¡é °¨¼Ò)"
-    return f"{x:+.4f} (¡æ ¾ÈÁ¤)"
+        return f"{x:+.4f} (â†“ ê°ì†Œ)"
+    return f"{x:+.4f} (â†’ ì•ˆì •)"
 
 
 def fmt_days_interp(x):
@@ -144,68 +144,68 @@ def fmt_days_interp(x):
         return "NA"
     x = int(x)
     if x == 0:
-        return f"{x}ÀÏ (Á¤»ó)"
+        return f"{x}ì¼ (ì •ìƒ)"
     elif x == 1:
-        return f"{x}ÀÏ (°æ¹Ì)"
+        return f"{x}ì¼ (ê²½ë¯¸)"
     elif x == 2:
-        return f"{x}ÀÏ (±â´É ÀúÇÏ)"
-    return f"{x}ÀÏ (Áö¼Ó ÀÌ»ó)"
+        return f"{x}ì¼ (ê¸°ëŠ¥ ì €í•˜)"
+    return f"{x}ì¼ (ì§€ì† ì´ìƒ)"
 
 
 def fmt_cv_interp(x):
     if pd.isna(x):
         return "NA"
     if x >= 1.5:
-        return f"{x:.2f}% (ºÒ¾ÈÁ¤)"
+        return f"{x:.2f}% (ë¶ˆì•ˆì •)"
     elif x >= 1.0:
-        return f"{x:.2f}% (º¯µ¿ Áõ°¡)"
-    return f"{x:.2f}% (¾ÈÁ¤)"
+        return f"{x:.2f}% (ë³€ë™ ì¦ê°€)"
+    return f"{x:.2f}% (ì•ˆì •)"
 
 
 def fmt_trend_interp(x):
     if pd.isna(x):
         return "NA"
     if x > 0.001:
-        return f"{x:+.4f} (¡è Áõ°¡)"
+        return f"{x:+.4f} (â†‘ ì¦ê°€)"
     elif x < -0.0005:
-        return f"{x:+.4f} (¡é °¨¼Ò)"
-    return f"{x:+.4f} (¡æ ¾ÈÁ¤)"
+        return f"{x:+.4f} (â†“ ê°ì†Œ)"
+    return f"{x:+.4f} (â†’ ì•ˆì •)"
 
 
 def render_interpretation_guide():
     st.markdown("""
-### ?? ÇØ¼® ±âÁØ
+### ğŸ“˜ í•´ì„ ê¸°ì¤€
 
-**¾çÃø ºñÀ²**
-- 1.05 ÀÌ»ó: È®Áõ
-- 1.02 ÀÌ»ó ~ 1.05 ¹Ì¸¸: °æ°è
-- 1.02 ¹Ì¸¸: Á¤»ó
+**ì–‘ì¸¡ ë¹„ìœ¨**
+- 1.05 ì´ìƒ: í™•ì¦
+- 1.02 ì´ìƒ ~ 1.05 ë¯¸ë§Œ: ê²½ê³„
+- 1.02 ë¯¸ë§Œ: ì •ìƒ
 
-**¿ÀÀü ±âÁØ¼± ÀÌÅ» / 3ÀÏ Æò±Õ Â÷ÀÌ**
-- +0.004 ÀÌ»ó: Áõ°¡
-- -0.002 ÀÌÇÏ: °¨¼Ò
-- ±× »çÀÌ: ¾ÈÁ¤
+**ì˜¤ì „ ê¸°ì¤€ì„  ì´íƒˆ / 3ì¼ í‰ê·  ì°¨ì´**
+- +0.004 ì´ìƒ: ì¦ê°€
+- -0.002 ì´í•˜: ê°ì†Œ
+- ê·¸ ì‚¬ì´: ì•ˆì •
 
-**7ÀÏ Ãß¼¼**
-- +0.001 ÃÊ°ú: »ó½Â
-- -0.0005 ¹Ì¸¸: ÇÏ°­
-- ±× »çÀÌ: ¾ÈÁ¤
+**7ì¼ ì¶”ì„¸**
+- +0.001 ì´ˆê³¼: ìƒìŠ¹
+- -0.0005 ë¯¸ë§Œ: í•˜ê°•
+- ê·¸ ì‚¬ì´: ì•ˆì •
 
-**È¸º¹ ½ÇÆĞ ÀÏ¼ö**
-- 0ÀÏ: Á¤»ó
-- 1ÀÏ: °æ¹Ì
-- 2ÀÏ: ±â´É ÀúÇÏ
-- 3ÀÏ ÀÌ»ó: Áö¼Ó ÀÌ»ó
+**íšŒë³µ ì‹¤íŒ¨ ì¼ìˆ˜**
+- 0ì¼: ì •ìƒ
+- 1ì¼: ê²½ë¯¸
+- 2ì¼: ê¸°ëŠ¥ ì €í•˜
+- 3ì¼ ì´ìƒ: ì§€ì† ì´ìƒ
 
-**7ÀÏ º¯µ¿°è¼ö**
-- 1.5% ÀÌ»ó: ºÒ¾ÈÁ¤
-- 1.0% ÀÌ»ó: º¯µ¿ Áõ°¡
-- 1.0% ¹Ì¸¸: ¾ÈÁ¤
+**7ì¼ ë³€ë™ê³„ìˆ˜**
+- 1.5% ì´ìƒ: ë¶ˆì•ˆì •
+- 1.0% ì´ìƒ: ë³€ë™ ì¦ê°€
+- 1.0% ë¯¸ë§Œ: ì•ˆì •
 """)
 
 
 def make_dashboard_summary(latest_row):
-    label = latest_row.get("ÃÖÁ¾ ÆÇÁ¤", "")
+    label = latest_row.get("ìµœì¢… íŒì •", "")
 
     ratio = latest_row.get("ratio", np.nan)
     am_3day_diff = latest_row.get("am_3day_diff", np.nan)
@@ -217,82 +217,82 @@ def make_dashboard_summary(latest_row):
 
     lines = []
 
-    if "ÁøÇà¼º ¸²ÇÁºÎÁ¾" in label:
-        lines.append("ÇöÀç´Â ÁøÇà¼º ¸²ÇÁºÎÁ¾¿¡ ÇØ´çÇÕ´Ï´Ù.")
-    elif "¾ÈÁ¤Çü ¸²ÇÁºÎÁ¾" in label:
-        lines.append("ÇöÀç´Â ±¸Á¶Àû ºñ´ëÄªÀº ÀÖÀ¸³ª ºñ±³Àû ¾ÈÁ¤µÈ »óÅÂÀÔ´Ï´Ù.")
-    elif "°æ°èÇü ¸²ÇÁºÎÁ¾" in label:
-        lines.append("ÇöÀç´Â °æ°èÇü ¸²ÇÁºÎÁ¾À¸·Î ÆÇ´ÜµË´Ï´Ù.")
-    elif "°æ°èÇü ºñ´ëÄª" in label:
-        lines.append("ÇöÀç´Â °æ°è ¼öÁØÀÇ ºñ´ëÄªÀÌ °üÂûµË´Ï´Ù.")
-    elif "ÃÊ±â ¸²ÇÁ dysfunction" in label:
-        lines.append("ÇöÀç´Â ÃÊ±â ¸²ÇÁ ±â´É ÀúÇÏ°¡ ÀÇ½ÉµË´Ï´Ù.")
-    elif "È¥ÇÕÇü ¾ÇÈ­" in label:
-        lines.append("ÇöÀç´Â ±¹¼Ò ¸²ÇÁ º¯È­¿Í Àü½Å º¯È­°¡ ÇÔ²² °üÂûµË´Ï´Ù.")
-    elif "Àü½Å ºÎÁ¾" in label:
-        lines.append("ÇöÀç´Â Àü½Å ºÎÁ¾ ¶Ç´Â Ã¼¾× º¯È­ °¡´É¼ºÀÌ ³ô½À´Ï´Ù.")
-    elif "È¸º¹ »óÅÂ" in label:
-        lines.append("ÇöÀç´Â È¸º¹ ¹æÇâÀÇ º¯È­°¡ °üÂûµË´Ï´Ù.")
+    if "ì§„í–‰ì„± ë¦¼í”„ë¶€ì¢…" in label:
+        lines.append("í˜„ì¬ëŠ” ì§„í–‰ì„± ë¦¼í”„ë¶€ì¢…ì— í•´ë‹¹í•©ë‹ˆë‹¤.")
+    elif "ì•ˆì •í˜• ë¦¼í”„ë¶€ì¢…" in label:
+        lines.append("í˜„ì¬ëŠ” êµ¬ì¡°ì  ë¹„ëŒ€ì¹­ì€ ìˆìœ¼ë‚˜ ë¹„êµì  ì•ˆì •ëœ ìƒíƒœì…ë‹ˆë‹¤.")
+    elif "ê²½ê³„í˜• ë¦¼í”„ë¶€ì¢…" in label:
+        lines.append("í˜„ì¬ëŠ” ê²½ê³„í˜• ë¦¼í”„ë¶€ì¢…ìœ¼ë¡œ íŒë‹¨ë©ë‹ˆë‹¤.")
+    elif "ê²½ê³„í˜• ë¹„ëŒ€ì¹­" in label:
+        lines.append("í˜„ì¬ëŠ” ê²½ê³„ ìˆ˜ì¤€ì˜ ë¹„ëŒ€ì¹­ì´ ê´€ì°°ë©ë‹ˆë‹¤.")
+    elif "ì´ˆê¸° ë¦¼í”„ dysfunction" in label:
+        lines.append("í˜„ì¬ëŠ” ì´ˆê¸° ë¦¼í”„ ê¸°ëŠ¥ ì €í•˜ê°€ ì˜ì‹¬ë©ë‹ˆë‹¤.")
+    elif "í˜¼í•©í˜• ì•…í™”" in label:
+        lines.append("í˜„ì¬ëŠ” êµ­ì†Œ ë¦¼í”„ ë³€í™”ì™€ ì „ì‹  ë³€í™”ê°€ í•¨ê»˜ ê´€ì°°ë©ë‹ˆë‹¤.")
+    elif "ì „ì‹  ë¶€ì¢…" in label:
+        lines.append("í˜„ì¬ëŠ” ì „ì‹  ë¶€ì¢… ë˜ëŠ” ì²´ì•¡ ë³€í™” ê°€ëŠ¥ì„±ì´ ë†’ìŠµë‹ˆë‹¤.")
+    elif "íšŒë³µ ìƒíƒœ" in label:
+        lines.append("í˜„ì¬ëŠ” íšŒë³µ ë°©í–¥ì˜ ë³€í™”ê°€ ê´€ì°°ë©ë‹ˆë‹¤.")
     else:
-        lines.append("ÇöÀç´Â ¶Ñ·ÇÇÑ ÀÌ»ó ¼Ò°ßÀÌ µÎµå·¯ÁöÁö ¾Ê½À´Ï´Ù.")
+        lines.append("í˜„ì¬ëŠ” ëšœë ·í•œ ì´ìƒ ì†Œê²¬ì´ ë‘ë“œëŸ¬ì§€ì§€ ì•ŠìŠµë‹ˆë‹¤.")
 
     if pd.notna(ratio):
         if ratio >= 1.05:
-            lines.append(f"¾çÃø ºñÀ²Àº {ratio:.3f}·Î È®Áõ ¹üÀ§ÀÔ´Ï´Ù.")
+            lines.append(f"ì–‘ì¸¡ ë¹„ìœ¨ì€ {ratio:.3f}ë¡œ í™•ì¦ ë²”ìœ„ì…ë‹ˆë‹¤.")
         elif ratio >= 1.02:
-            lines.append(f"¾çÃø ºñÀ²Àº {ratio:.3f}·Î °æ°è ¹üÀ§ÀÔ´Ï´Ù.")
+            lines.append(f"ì–‘ì¸¡ ë¹„ìœ¨ì€ {ratio:.3f}ë¡œ ê²½ê³„ ë²”ìœ„ì…ë‹ˆë‹¤.")
         else:
-            lines.append(f"¾çÃø ºñÀ²Àº {ratio:.3f}·Î Á¤»ó ¹üÀ§ÀÔ´Ï´Ù.")
+            lines.append(f"ì–‘ì¸¡ ë¹„ìœ¨ì€ {ratio:.3f}ë¡œ ì •ìƒ ë²”ìœ„ì…ë‹ˆë‹¤.")
 
     if pd.notna(am_3day_diff):
         if am_3day_diff >= 0.004:
-            lines.append(f"È¯Ãø 3ÀÏ Æò±Õ Â÷ÀÌ´Â {am_3day_diff:+.4f}·Î Áõ°¡ »óÅÂÀÔ´Ï´Ù.")
+            lines.append(f"í™˜ì¸¡ 3ì¼ í‰ê·  ì°¨ì´ëŠ” {am_3day_diff:+.4f}ë¡œ ì¦ê°€ ìƒíƒœì…ë‹ˆë‹¤.")
         elif am_3day_diff <= -0.002:
-            lines.append(f"È¯Ãø 3ÀÏ Æò±Õ Â÷ÀÌ´Â {am_3day_diff:+.4f}·Î °¨¼Ò »óÅÂÀÔ´Ï´Ù.")
+            lines.append(f"í™˜ì¸¡ 3ì¼ í‰ê·  ì°¨ì´ëŠ” {am_3day_diff:+.4f}ë¡œ ê°ì†Œ ìƒíƒœì…ë‹ˆë‹¤.")
         else:
-            lines.append(f"È¯Ãø 3ÀÏ Æò±Õ Â÷ÀÌ´Â {am_3day_diff:+.4f}·Î ºñ±³Àû ¾ÈÁ¤ÀûÀÔ´Ï´Ù.")
+            lines.append(f"í™˜ì¸¡ 3ì¼ í‰ê·  ì°¨ì´ëŠ” {am_3day_diff:+.4f}ë¡œ ë¹„êµì  ì•ˆì •ì ì…ë‹ˆë‹¤.")
 
     if pd.notna(fail3):
         if fail3 >= 2:
-            lines.append(f"ÃÖ±Ù 3ÀÏ°£ È¸º¹ ½ÇÆĞ ÀÏ¼ö´Â {int(fail3)}ÀÏ·Î ±â´É ÀúÇÏ°¡ ÀÇ½ÉµË´Ï´Ù.")
+            lines.append(f"ìµœê·¼ 3ì¼ê°„ íšŒë³µ ì‹¤íŒ¨ ì¼ìˆ˜ëŠ” {int(fail3)}ì¼ë¡œ ê¸°ëŠ¥ ì €í•˜ê°€ ì˜ì‹¬ë©ë‹ˆë‹¤.")
         elif fail3 == 1:
-            lines.append("ÃÖ±Ù 3ÀÏ°£ È¸º¹ ½ÇÆĞ´Â °æ¹ÌÇÑ ¼öÁØÀÔ´Ï´Ù.")
+            lines.append("ìµœê·¼ 3ì¼ê°„ íšŒë³µ ì‹¤íŒ¨ëŠ” ê²½ë¯¸í•œ ìˆ˜ì¤€ì…ë‹ˆë‹¤.")
 
     if pd.notna(am_trend):
         if am_trend > 0.001:
-            lines.append(f"È¯Ãø 7ÀÏ Ãß¼¼´Â {am_trend:+.4f}·Î »ó½Â ¹æÇâÀÔ´Ï´Ù.")
+            lines.append(f"í™˜ì¸¡ 7ì¼ ì¶”ì„¸ëŠ” {am_trend:+.4f}ë¡œ ìƒìŠ¹ ë°©í–¥ì…ë‹ˆë‹¤.")
         elif am_trend < -0.0005:
-            lines.append(f"È¯Ãø 7ÀÏ Ãß¼¼´Â {am_trend:+.4f}·Î È¸º¹ ¹æÇâÀÔ´Ï´Ù.")
+            lines.append(f"í™˜ì¸¡ 7ì¼ ì¶”ì„¸ëŠ” {am_trend:+.4f}ë¡œ íšŒë³µ ë°©í–¥ì…ë‹ˆë‹¤.")
         else:
-            lines.append("È¯Ãø 7ÀÏ Ãß¼¼´Â ¶Ñ·ÇÇÑ ¹æÇâ¼º ¾øÀÌ ¾ÈÁ¤ÀûÀÔ´Ï´Ù.")
+            lines.append("í™˜ì¸¡ 7ì¼ ì¶”ì„¸ëŠ” ëšœë ·í•œ ë°©í–¥ì„± ì—†ì´ ì•ˆì •ì ì…ë‹ˆë‹¤.")
 
     if pd.notna(leg_3day_diff):
         if leg_3day_diff >= 0.004:
-            lines.append(f"ÇÏÁö 3ÀÏ Æò±Õ Â÷ÀÌ´Â {leg_3day_diff:+.4f}·Î Áõ°¡ »óÅÂÀÔ´Ï´Ù.")
+            lines.append(f"í•˜ì§€ 3ì¼ í‰ê·  ì°¨ì´ëŠ” {leg_3day_diff:+.4f}ë¡œ ì¦ê°€ ìƒíƒœì…ë‹ˆë‹¤.")
         else:
-            lines.append("ÇÏÁö 3ÀÏ Æò±Õ Â÷ÀÌ´Â Å©Áö ¾Ê¾Æ ±¹¼Ò º¯È­ °¡´É¼ºÀÌ ³ô½À´Ï´Ù.")
+            lines.append("í•˜ì§€ 3ì¼ í‰ê·  ì°¨ì´ëŠ” í¬ì§€ ì•Šì•„ êµ­ì†Œ ë³€í™” ê°€ëŠ¥ì„±ì´ ë†’ìŠµë‹ˆë‹¤.")
 
     if pd.notna(leg_trend) and leg_trend > 0.001:
-        lines.append(f"ÇÏÁö 7ÀÏ Ãß¼¼´Â {leg_trend:+.4f}·Î »ó½Â ¹æÇâÀÔ´Ï´Ù.")
+        lines.append(f"í•˜ì§€ 7ì¼ ì¶”ì„¸ëŠ” {leg_trend:+.4f}ë¡œ ìƒìŠ¹ ë°©í–¥ì…ë‹ˆë‹¤.")
 
     if pd.notna(cv7) and cv7 >= 1.0:
-        lines.append(f"7ÀÏ º¯µ¿°è¼ö´Â {cv7:.2f}%·Î º¯µ¿ Áõ°¡ »óÅÂÀÔ´Ï´Ù.")
+        lines.append(f"7ì¼ ë³€ë™ê³„ìˆ˜ëŠ” {cv7:.2f}%ë¡œ ë³€ë™ ì¦ê°€ ìƒíƒœì…ë‹ˆë‹¤.")
 
     return " ".join(lines)
 
 
 # ==========================================
-# 2. È¯Ãø Ãß·Ğ / ¿øº» Æ÷¸Ë Á¤¸®
+# 2. í™˜ì¸¡ ì¶”ë¡  / ì›ë³¸ í¬ë§· ì •ë¦¬
 # ==========================================
 def infer_affected_side(sheet_name: str) -> str:
     name = str(sheet_name).strip()
-    if "¿ìÃø" in name:
-        return "¿ìÃø"
-    if "ÁÂÃø" in name:
-        return "ÁÂÃø"
+    if "ìš°ì¸¡" in name:
+        return "ìš°ì¸¡"
+    if "ì¢Œì¸¡" in name:
+        return "ì¢Œì¸¡"
     raise ValueError(
-        f"½ÃÆ®¸í '{sheet_name}' ¿¡ È¯Ãø(¿ìÃø/ÁÂÃø) Á¤º¸°¡ ¾ø½À´Ï´Ù. "
-        "½ÃÆ®¸í¿¡ È¯ÃøÀ» Æ÷ÇÔÇÏ¼¼¿ä. ¿¹: È«±æµ¿_¿ìÃø»óÁö"
+        f"ì‹œíŠ¸ëª… '{sheet_name}' ì— í™˜ì¸¡(ìš°ì¸¡/ì¢Œì¸¡) ì •ë³´ê°€ ì—†ìŠµë‹ˆë‹¤. "
+        "ì‹œíŠ¸ëª…ì— í™˜ì¸¡ì„ í¬í•¨í•˜ì„¸ìš”. ì˜ˆ: í™ê¸¸ë™_ìš°ì¸¡ìƒì§€"
     )
 
 
@@ -301,34 +301,34 @@ def format_raw_data(df, sheet_name):
     df.columns = df.columns.astype(str).str.strip().str.replace("\n", "", regex=False)
 
     col_mapping = {
-        "¿ìÃø»óÁö¼¼Æ÷¿Ü¼öºĞºñ": "¿ìÃø »óÁö",
-        "¿ìÃø »óÁö ¼¼Æ÷¿Ü¼öºĞºñ": "¿ìÃø »óÁö",
-        "¿ìÃø»óÁö": "¿ìÃø »óÁö",
-        "RightArm": "¿ìÃø »óÁö",
+        "ìš°ì¸¡ìƒì§€ì„¸í¬ì™¸ìˆ˜ë¶„ë¹„": "ìš°ì¸¡ ìƒì§€",
+        "ìš°ì¸¡ ìƒì§€ ì„¸í¬ì™¸ìˆ˜ë¶„ë¹„": "ìš°ì¸¡ ìƒì§€",
+        "ìš°ì¸¡ìƒì§€": "ìš°ì¸¡ ìƒì§€",
+        "RightArm": "ìš°ì¸¡ ìƒì§€",
 
-        "ÁÂÃø»óÁö¼¼Æ÷¿Ü¼öºĞºñ": "ÁÂÃø »óÁö",
-        "ÁÂÃø »óÁö ¼¼Æ÷¿Ü¼öºĞºñ": "ÁÂÃø »óÁö",
-        "ÁÂÃø»óÁö": "ÁÂÃø »óÁö",
-        "LeftArm": "ÁÂÃø »óÁö",
+        "ì¢Œì¸¡ìƒì§€ì„¸í¬ì™¸ìˆ˜ë¶„ë¹„": "ì¢Œì¸¡ ìƒì§€",
+        "ì¢Œì¸¡ ìƒì§€ ì„¸í¬ì™¸ìˆ˜ë¶„ë¹„": "ì¢Œì¸¡ ìƒì§€",
+        "ì¢Œì¸¡ìƒì§€": "ì¢Œì¸¡ ìƒì§€",
+        "LeftArm": "ì¢Œì¸¡ ìƒì§€",
 
-        "Ã¼°£¼¼Æ÷¿Ü¼öºĞºñ": "Ã¼°£",
-        "Ã¼°£ ¼¼Æ÷¿Ü¼öºĞºñ": "Ã¼°£",
-        "Ã¼°£": "Ã¼°£",
-        "Trunk": "Ã¼°£",
+        "ì²´ê°„ì„¸í¬ì™¸ìˆ˜ë¶„ë¹„": "ì²´ê°„",
+        "ì²´ê°„ ì„¸í¬ì™¸ìˆ˜ë¶„ë¹„": "ì²´ê°„",
+        "ì²´ê°„": "ì²´ê°„",
+        "Trunk": "ì²´ê°„",
 
-        "¿ìÃøÇÏÁö¼¼Æ÷¿Ü¼öºĞºñ": "¿ìÃø ÇÏÁö",
-        "¿ìÃø ÇÏÁö ¼¼Æ÷¿Ü¼öºĞºñ": "¿ìÃø ÇÏÁö",
-        "¿ìÃøÇÏÁö": "¿ìÃø ÇÏÁö",
-        "RightLeg": "¿ìÃø ÇÏÁö",
+        "ìš°ì¸¡í•˜ì§€ì„¸í¬ì™¸ìˆ˜ë¶„ë¹„": "ìš°ì¸¡ í•˜ì§€",
+        "ìš°ì¸¡ í•˜ì§€ ì„¸í¬ì™¸ìˆ˜ë¶„ë¹„": "ìš°ì¸¡ í•˜ì§€",
+        "ìš°ì¸¡í•˜ì§€": "ìš°ì¸¡ í•˜ì§€",
+        "RightLeg": "ìš°ì¸¡ í•˜ì§€",
 
-        "ÁÂÃøÇÏÁö¼¼Æ÷¿Ü¼öºĞºñ": "ÁÂÃø ÇÏÁö",
-        "ÁÂÃø ÇÏÁö ¼¼Æ÷¿Ü¼öºĞºñ": "ÁÂÃø ÇÏÁö",
-        "ÁÂÃøÇÏÁö": "ÁÂÃø ÇÏÁö",
-        "LeftLeg": "ÁÂÃø ÇÏÁö",
+        "ì¢Œì¸¡í•˜ì§€ì„¸í¬ì™¸ìˆ˜ë¶„ë¹„": "ì¢Œì¸¡ í•˜ì§€",
+        "ì¢Œì¸¡ í•˜ì§€ ì„¸í¬ì™¸ìˆ˜ë¶„ë¹„": "ì¢Œì¸¡ í•˜ì§€",
+        "ì¢Œì¸¡í•˜ì§€": "ì¢Œì¸¡ í•˜ì§€",
+        "LeftLeg": "ì¢Œì¸¡ í•˜ì§€",
 
-        "°Ë»çÀÏ½Ã": "°Ë»çÀÏ½Ã",
-        "Date": "°Ë»çÀÏ½Ã",
-        "DateTime": "°Ë»çÀÏ½Ã",
+        "ê²€ì‚¬ì¼ì‹œ": "ê²€ì‚¬ì¼ì‹œ",
+        "Date": "ê²€ì‚¬ì¼ì‹œ",
+        "DateTime": "ê²€ì‚¬ì¼ì‹œ",
     }
 
     rename_dict = {}
@@ -340,97 +340,97 @@ def format_raw_data(df, sheet_name):
                 break
     df = df.rename(columns=rename_dict)
 
-    df["È¯Ãø¹æÇâ"] = infer_affected_side(sheet_name)
+    df["í™˜ì¸¡ë°©í–¥"] = infer_affected_side(sheet_name)
     return df
 
 
 # ==========================================
-# 3. ÀüÃ³¸®
+# 3. ì „ì²˜ë¦¬
 # ==========================================
 def classify_time_period(ts: pd.Timestamp):
     if pd.isna(ts):
         return np.nan
     h = ts.hour
-    return "¿ÀÀü" if 4 <= h < 12 else "¿ÀÈÄ"
+    return "ì˜¤ì „" if 4 <= h < 12 else "ì˜¤í›„"
 
 
 def preprocess_data(df_raw):
     df = df_raw.copy()
 
-    required_cols = ["°Ë»çÀÏ½Ã", "È¯Ãø¹æÇâ", "¿ìÃø »óÁö", "ÁÂÃø »óÁö", "Ã¼°£", "¿ìÃø ÇÏÁö", "ÁÂÃø ÇÏÁö"]
+    required_cols = ["ê²€ì‚¬ì¼ì‹œ", "í™˜ì¸¡ë°©í–¥", "ìš°ì¸¡ ìƒì§€", "ì¢Œì¸¡ ìƒì§€", "ì²´ê°„", "ìš°ì¸¡ í•˜ì§€", "ì¢Œì¸¡ í•˜ì§€"]
     missing = [c for c in required_cols if c not in df.columns]
     if missing:
-        raise ValueError(f"ÇÊ¼ö ÄÃ·³ÀÌ ¾ø½À´Ï´Ù: {missing}")
+        raise ValueError(f"í•„ìˆ˜ ì»¬ëŸ¼ì´ ì—†ìŠµë‹ˆë‹¤: {missing}")
 
-    df["°Ë»çÀÏ½Ã"] = pd.to_datetime(df["°Ë»çÀÏ½Ã"], errors="coerce")
-    if df["°Ë»çÀÏ½Ã"].isna().all():
-        raise ValueError("°Ë»çÀÏ½Ã¸¦ ³¯Â¥/½Ã°£À¸·Î º¯È¯ÇÒ ¼ö ¾ø½À´Ï´Ù.")
+    df["ê²€ì‚¬ì¼ì‹œ"] = pd.to_datetime(df["ê²€ì‚¬ì¼ì‹œ"], errors="coerce")
+    if df["ê²€ì‚¬ì¼ì‹œ"].isna().all():
+        raise ValueError("ê²€ì‚¬ì¼ì‹œë¥¼ ë‚ ì§œ/ì‹œê°„ìœ¼ë¡œ ë³€í™˜í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤.")
 
-    numeric_cols = ["¿ìÃø »óÁö", "ÁÂÃø »óÁö", "Ã¼°£", "¿ìÃø ÇÏÁö", "ÁÂÃø ÇÏÁö"]
+    numeric_cols = ["ìš°ì¸¡ ìƒì§€", "ì¢Œì¸¡ ìƒì§€", "ì²´ê°„", "ìš°ì¸¡ í•˜ì§€", "ì¢Œì¸¡ í•˜ì§€"]
     for col in numeric_cols:
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
-    df = df.dropna(subset=["°Ë»çÀÏ½Ã"]).sort_values("°Ë»çÀÏ½Ã").reset_index(drop=True)
+    df = df.dropna(subset=["ê²€ì‚¬ì¼ì‹œ"]).sort_values("ê²€ì‚¬ì¼ì‹œ").reset_index(drop=True)
 
-    affected_is_right = df["È¯Ãø¹æÇâ"].astype(str).str.contains("¿ì")
-    df["È¯Ãø"] = np.where(affected_is_right, df["¿ìÃø »óÁö"], df["ÁÂÃø »óÁö"])
-    df["°ÇÃø"] = np.where(affected_is_right, df["ÁÂÃø »óÁö"], df["¿ìÃø »óÁö"])
+    affected_is_right = df["í™˜ì¸¡ë°©í–¥"].astype(str).str.contains("ìš°")
+    df["í™˜ì¸¡"] = np.where(affected_is_right, df["ìš°ì¸¡ ìƒì§€"], df["ì¢Œì¸¡ ìƒì§€"])
+    df["ê±´ì¸¡"] = np.where(affected_is_right, df["ì¢Œì¸¡ ìƒì§€"], df["ìš°ì¸¡ ìƒì§€"])
 
-    df["Time_Period"] = df["°Ë»çÀÏ½Ã"].apply(classify_time_period)
-    df["Date_Key"] = df["°Ë»çÀÏ½Ã"].dt.date
+    df["Time_Period"] = df["ê²€ì‚¬ì¼ì‹œ"].apply(classify_time_period)
+    df["Date_Key"] = df["ê²€ì‚¬ì¼ì‹œ"].dt.date
 
     am_src = (
-        df[df["Time_Period"] == "¿ÀÀü"]
-        .sort_values("°Ë»çÀÏ½Ã")
+        df[df["Time_Period"] == "ì˜¤ì „"]
+        .sort_values("ê²€ì‚¬ì¼ì‹œ")
         .groupby("Date_Key", as_index=False)
         .first()
     )
     pm_src = (
-        df[df["Time_Period"] == "¿ÀÈÄ"]
-        .sort_values("°Ë»çÀÏ½Ã")
+        df[df["Time_Period"] == "ì˜¤í›„"]
+        .sort_values("ê²€ì‚¬ì¼ì‹œ")
         .groupby("Date_Key", as_index=False)
         .last()
     )
 
-    am_df = am_src[["Date_Key", "È¯Ãø", "°ÇÃø", "¿ìÃø ÇÏÁö", "ÁÂÃø ÇÏÁö", "Ã¼°£"]].copy()
-    am_df.columns = ["Date_Key", "È¯Ãø ¿ÀÀü", "°ÇÃø ¿ÀÀü", "¿ìÃø ÇÏÁö", "ÁÂÃø ÇÏÁö", "Ã¼°£"]
+    am_df = am_src[["Date_Key", "í™˜ì¸¡", "ê±´ì¸¡", "ìš°ì¸¡ í•˜ì§€", "ì¢Œì¸¡ í•˜ì§€", "ì²´ê°„"]].copy()
+    am_df.columns = ["Date_Key", "í™˜ì¸¡ ì˜¤ì „", "ê±´ì¸¡ ì˜¤ì „", "ìš°ì¸¡ í•˜ì§€", "ì¢Œì¸¡ í•˜ì§€", "ì²´ê°„"]
 
-    pm_df = pm_src[["Date_Key", "È¯Ãø", "°ÇÃø"]].copy()
-    pm_df.columns = ["Date_Key", "È¯Ãø ¿ÀÈÄ", "°ÇÃø ¿ÀÈÄ"]
+    pm_df = pm_src[["Date_Key", "í™˜ì¸¡", "ê±´ì¸¡"]].copy()
+    pm_df.columns = ["Date_Key", "í™˜ì¸¡ ì˜¤í›„", "ê±´ì¸¡ ì˜¤í›„"]
 
     daily_df = pd.merge(am_df, pm_df, on="Date_Key", how="outer").sort_values("Date_Key").reset_index(drop=True)
-    daily_df["°Ë»çÀÏ½Ã"] = pd.to_datetime(daily_df["Date_Key"])
-    daily_df["ÇÏÁö Æò±Õ"] = (daily_df["¿ìÃø ÇÏÁö"] + daily_df["ÁÂÃø ÇÏÁö"]) / 2
+    daily_df["ê²€ì‚¬ì¼ì‹œ"] = pd.to_datetime(daily_df["Date_Key"])
+    daily_df["í•˜ì§€ í‰ê· "] = (daily_df["ìš°ì¸¡ í•˜ì§€"] + daily_df["ì¢Œì¸¡ í•˜ì§€"]) / 2
 
-    daily_df["date_diff_days"] = daily_df["°Ë»çÀÏ½Ã"].diff().dt.days
+    daily_df["date_diff_days"] = daily_df["ê²€ì‚¬ì¼ì‹œ"].diff().dt.days
     daily_df["is_consecutive_day"] = daily_df["date_diff_days"].fillna(1).eq(1)
 
     return daily_df
 
 
 # ==========================================
-# 4. ÁöÇ¥ °è»ê
+# 4. ì§€í‘œ ê³„ì‚°
 # ==========================================
 def calculate_metrics(df, baseline_days=3):
     df = df.copy()
 
-    arm_baseline = safe_mean(df["È¯Ãø ¿ÀÀü"].iloc[:baseline_days])
-    leg_baseline = safe_mean(df["ÇÏÁö Æò±Õ"].iloc[:baseline_days])
-    trunk_baseline = safe_mean(df["Ã¼°£"].iloc[:baseline_days])
+    arm_baseline = safe_mean(df["í™˜ì¸¡ ì˜¤ì „"].iloc[:baseline_days])
+    leg_baseline = safe_mean(df["í•˜ì§€ í‰ê· "].iloc[:baseline_days])
+    trunk_baseline = safe_mean(df["ì²´ê°„"].iloc[:baseline_days])
 
     df["baseline_ref"] = arm_baseline
     df["leg_baseline_ref"] = leg_baseline
     df["trunk_baseline_ref"] = trunk_baseline
 
-    # ´çÀÏ
-    df["ratio"] = df["È¯Ãø ¿ÀÀü"] / df["°ÇÃø ¿ÀÀü"]
-    df["AM_drift"] = df["È¯Ãø ¿ÀÀü"] - arm_baseline
-    df["day_gain"] = df["È¯Ãø ¿ÀÈÄ"] - df["È¯Ãø ¿ÀÀü"]
+    # ë‹¹ì¼
+    df["ratio"] = df["í™˜ì¸¡ ì˜¤ì „"] / df["ê±´ì¸¡ ì˜¤ì „"]
+    df["AM_drift"] = df["í™˜ì¸¡ ì˜¤ì „"] - arm_baseline
+    df["day_gain"] = df["í™˜ì¸¡ ì˜¤í›„"] - df["í™˜ì¸¡ ì˜¤ì „"]
 
-    df["prev_pm"] = df["È¯Ãø ¿ÀÈÄ"].shift(1)
+    df["prev_pm"] = df["í™˜ì¸¡ ì˜¤í›„"].shift(1)
     df["night_recovery"] = np.where(
         df["is_consecutive_day"],
-        df["È¯Ãø ¿ÀÀü"] - df["prev_pm"],
+        df["í™˜ì¸¡ ì˜¤ì „"] - df["prev_pm"],
         np.nan
     )
 
@@ -440,53 +440,53 @@ def calculate_metrics(df, baseline_days=3):
         np.where(df["night_recovery"] >= 0, 1, 0)
     )
 
-    # 3ÀÏ
+    # 3ì¼
     df["recovery_fail_3d"] = df["recovery_fail"].rolling(3, min_periods=1).sum()
 
-    df["am_3day_mean"] = df["È¯Ãø ¿ÀÀü"].rolling(3, min_periods=2).mean()
+    df["am_3day_mean"] = df["í™˜ì¸¡ ì˜¤ì „"].rolling(3, min_periods=2).mean()
     df["am_3day_diff"] = df["am_3day_mean"] - arm_baseline
 
-    df["leg_3day_mean"] = df["ÇÏÁö Æò±Õ"].rolling(3, min_periods=2).mean()
+    df["leg_3day_mean"] = df["í•˜ì§€ í‰ê· "].rolling(3, min_periods=2).mean()
     df["leg_3day_diff"] = df["leg_3day_mean"] - leg_baseline
 
-    df["trunk_3day_mean"] = df["Ã¼°£"].rolling(3, min_periods=2).mean()
+    df["trunk_3day_mean"] = df["ì²´ê°„"].rolling(3, min_periods=2).mean()
     df["trunk_3day_diff"] = df["trunk_3day_mean"] - trunk_baseline
 
     df["AM_3day_range"] = (
-        df["È¯Ãø ¿ÀÀü"].rolling(3, min_periods=2).max()
-        - df["È¯Ãø ¿ÀÀü"].rolling(3, min_periods=2).min()
+        df["í™˜ì¸¡ ì˜¤ì „"].rolling(3, min_periods=2).max()
+        - df["í™˜ì¸¡ ì˜¤ì „"].rolling(3, min_periods=2).min()
     ).fillna(0)
 
-    # 7ÀÏ ¼öÁØ
-    df["AM_7day_mean"] = df["È¯Ãø ¿ÀÀü"].rolling(7, min_periods=3).mean()
+    # 7ì¼ ìˆ˜ì¤€
+    df["AM_7day_mean"] = df["í™˜ì¸¡ ì˜¤ì „"].rolling(7, min_periods=3).mean()
     df["AM_7day_drift"] = df["AM_7day_mean"] - arm_baseline
 
-    df["leg_7day_mean"] = df["ÇÏÁö Æò±Õ"].rolling(7, min_periods=3).mean()
+    df["leg_7day_mean"] = df["í•˜ì§€ í‰ê· "].rolling(7, min_periods=3).mean()
     df["leg_7day_diff"] = df["leg_7day_mean"] - leg_baseline
 
-    df["trunk_7day_mean"] = df["Ã¼°£"].rolling(7, min_periods=3).mean()
+    df["trunk_7day_mean"] = df["ì²´ê°„"].rolling(7, min_periods=3).mean()
     df["trunk_7day_diff"] = df["trunk_7day_mean"] - trunk_baseline
 
-    # 7ÀÏ Ãß¼¼
-    df["AM_7day_trend"] = df["È¯Ãø ¿ÀÀü"].rolling(7, min_periods=3).apply(calculate_slope, raw=False)
-    df["leg_7day_trend"] = df["ÇÏÁö Æò±Õ"].rolling(7, min_periods=3).apply(calculate_slope, raw=False)
-    df["trunk_7day_trend"] = df["Ã¼°£"].rolling(7, min_periods=3).apply(calculate_slope, raw=False)
+    # 7ì¼ ì¶”ì„¸
+    df["AM_7day_trend"] = df["í™˜ì¸¡ ì˜¤ì „"].rolling(7, min_periods=3).apply(calculate_slope, raw=False)
+    df["leg_7day_trend"] = df["í•˜ì§€ í‰ê· "].rolling(7, min_periods=3).apply(calculate_slope, raw=False)
+    df["trunk_7day_trend"] = df["ì²´ê°„"].rolling(7, min_periods=3).apply(calculate_slope, raw=False)
 
-    # Àü½Å º¯È­·®
+    # ì „ì‹  ë³€í™”ëŸ‰
     df["leg_change"] = np.where(
         df["is_consecutive_day"],
-        df["ÇÏÁö Æò±Õ"] - df["ÇÏÁö Æò±Õ"].shift(1),
+        df["í•˜ì§€ í‰ê· "] - df["í•˜ì§€ í‰ê· "].shift(1),
         np.nan
     )
     df["trunk_change"] = np.where(
         df["is_consecutive_day"],
-        df["Ã¼°£"] - df["Ã¼°£"].shift(1),
+        df["ì²´ê°„"] - df["ì²´ê°„"].shift(1),
         np.nan
     )
-    df["leg_drift"] = df["ÇÏÁö Æò±Õ"] - leg_baseline
-    df["trunk_drift"] = df["Ã¼°£"] - trunk_baseline
+    df["leg_drift"] = df["í•˜ì§€ í‰ê· "] - leg_baseline
+    df["trunk_drift"] = df["ì²´ê°„"] - trunk_baseline
 
-    # 7ÀÏ ¿ä¾à ÁöÇ¥
+    # 7ì¼ ìš”ì•½ ì§€í‘œ
     fail_7d_list = []
     am_range_7d_list = []
     pm_range_7d_list = []
@@ -498,13 +498,13 @@ def calculate_metrics(df, baseline_days=3):
         fail_7d = int((r7["night_recovery"] >= 0).sum())
 
         am_range_7d = (
-            r7["È¯Ãø ¿ÀÀü"].max() - r7["È¯Ãø ¿ÀÀü"].min()
-            if r7["È¯Ãø ¿ÀÀü"].notna().sum() >= 2 else np.nan
+            r7["í™˜ì¸¡ ì˜¤ì „"].max() - r7["í™˜ì¸¡ ì˜¤ì „"].min()
+            if r7["í™˜ì¸¡ ì˜¤ì „"].notna().sum() >= 2 else np.nan
         )
 
         pm_range_7d = (
-            r7["È¯Ãø ¿ÀÈÄ"].max() - r7["È¯Ãø ¿ÀÈÄ"].min()
-            if r7["È¯Ãø ¿ÀÈÄ"].notna().sum() >= 2 else np.nan
+            r7["í™˜ì¸¡ ì˜¤í›„"].max() - r7["í™˜ì¸¡ ì˜¤í›„"].min()
+            if r7["í™˜ì¸¡ ì˜¤í›„"].notna().sum() >= 2 else np.nan
         )
 
         ratio_mean = r7["ratio"].mean()
@@ -525,7 +525,7 @@ def calculate_metrics(df, baseline_days=3):
     df["pm_range_7d"] = pm_range_7d_list
     df["cv_7d"] = cv_7d_list
 
-    # 3ÀÏ ratio °æ°í ÀÏ¼ö
+    # 3ì¼ ratio ê²½ê³  ì¼ìˆ˜
     warn_ratio_3d = []
     for i in range(len(df)):
         r3 = df.iloc[max(0, i - 2): i + 1]
@@ -536,7 +536,7 @@ def calculate_metrics(df, baseline_days=3):
 
 
 # ==========================================
-# 5. Á¡¼ö °è»ê / ºĞ·ù
+# 5. ì ìˆ˜ ê³„ì‚° / ë¶„ë¥˜
 # ==========================================
 def calculate_scores(row):
     local_score = 0
@@ -609,35 +609,35 @@ def classify(row):
 
     if systemic_score >= 3:
         if local_score >= 3:
-            return "?? È¥ÇÕÇü ¾ÇÈ­ (¸²ÇÁ + Àü½Å)"
-        return "?? Àü½Å ºÎÁ¾/Ã¼¾× º¯È­ ÀÇ½É"
+            return "ğŸŸ  í˜¼í•©í˜• ì•…í™” (ë¦¼í”„ + ì „ì‹ )"
+        return "ğŸŸ  ì „ì‹  ë¶€ì¢…/ì²´ì•¡ ë³€í™” ì˜ì‹¬"
 
     if pd.notna(ratio) and ratio >= 1.05:
         if local_score >= 4:
-            return "?? ÁøÇà¼º ¸²ÇÁºÎÁ¾ (È®Áõ + ¾ÇÈ­)"
-        return "?? ¾ÈÁ¤Çü ¸²ÇÁºÎÁ¾ (È®Áõ)"
+            return "ğŸ”´ ì§„í–‰ì„± ë¦¼í”„ë¶€ì¢… (í™•ì¦ + ì•…í™”)"
+        return "ğŸ”µ ì•ˆì •í˜• ë¦¼í”„ë¶€ì¢… (í™•ì¦)"
 
     if pd.notna(ratio) and 1.02 <= ratio < 1.05:
         if local_score >= 3:
-            return "?? °æ°èÇü ¸²ÇÁºÎÁ¾ (ºñ´ëÄª + µ¿ÅÂ ÀÌ»ó)"
-        return "?? °æ°èÇü ºñ´ëÄª"
+            return "ğŸŸ£ ê²½ê³„í˜• ë¦¼í”„ë¶€ì¢… (ë¹„ëŒ€ì¹­ + ë™íƒœ ì´ìƒ)"
+        return "ğŸŸ¡ ê²½ê³„í˜• ë¹„ëŒ€ì¹­"
 
     if (
         pd.notna(am_3day_diff) and am_3day_diff >= 0.004 and
         pd.notna(am_7day_trend) and am_7day_trend > 0.0005
     ):
-        return "?? ÃÊ±â ¸²ÇÁ dysfunction (µ¿ÅÂ ÀÌ»ó)"
+        return "ğŸŸ£ ì´ˆê¸° ë¦¼í”„ dysfunction (ë™íƒœ ì´ìƒ)"
 
     if local_score >= 2:
-        return "?? ÁÖÀÇ °üÂû ÇÊ¿ä"
+        return "ğŸŸ¡ ì£¼ì˜ ê´€ì°° í•„ìš”"
 
     if (
         pd.notna(am_3day_diff) and am_3day_diff <= -0.002 and
         pd.notna(am_7day_trend) and am_7day_trend < -0.0005
     ):
-        return "?? È¸º¹ »óÅÂ"
+        return "ğŸ”µ íšŒë³µ ìƒíƒœ"
 
-    return "?? ¾ÈÁ¤ / Á¤»ó"
+    return "ğŸŸ¢ ì•ˆì • / ì •ìƒ"
 
 
 def explain_latest(row):
@@ -645,39 +645,39 @@ def explain_latest(row):
 
     if pd.notna(row["ratio"]):
         if row["ratio"] >= 1.05:
-            reasons.append(f"¾çÃø ºñÀ² {row['ratio']:.3f}·Î È®Áõ ¹üÀ§ÀÔ´Ï´Ù")
+            reasons.append(f"ì–‘ì¸¡ ë¹„ìœ¨ {row['ratio']:.3f}ë¡œ í™•ì¦ ë²”ìœ„ì…ë‹ˆë‹¤")
         elif row["ratio"] >= 1.02:
-            reasons.append(f"¾çÃø ºñÀ² {row['ratio']:.3f}·Î °æ°è ¹üÀ§ÀÔ´Ï´Ù")
+            reasons.append(f"ì–‘ì¸¡ ë¹„ìœ¨ {row['ratio']:.3f}ë¡œ ê²½ê³„ ë²”ìœ„ì…ë‹ˆë‹¤")
 
     if pd.notna(row["am_3day_diff"]):
         if row["am_3day_diff"] >= 0.004:
-            reasons.append(f"È¯Ãø 3ÀÏ Æò±Õ Â÷ÀÌ°¡ {row['am_3day_diff']:.4f}·Î Áõ°¡ »óÅÂÀÔ´Ï´Ù")
+            reasons.append(f"í™˜ì¸¡ 3ì¼ í‰ê·  ì°¨ì´ê°€ {row['am_3day_diff']:.4f}ë¡œ ì¦ê°€ ìƒíƒœì…ë‹ˆë‹¤")
         elif row["am_3day_diff"] <= -0.002:
-            reasons.append(f"È¯Ãø 3ÀÏ Æò±Õ Â÷ÀÌ°¡ {row['am_3day_diff']:.4f}·Î °¨¼Ò »óÅÂÀÔ´Ï´Ù")
+            reasons.append(f"í™˜ì¸¡ 3ì¼ í‰ê·  ì°¨ì´ê°€ {row['am_3day_diff']:.4f}ë¡œ ê°ì†Œ ìƒíƒœì…ë‹ˆë‹¤")
 
     if pd.notna(row["recovery_fail_3d"]) and row["recovery_fail_3d"] >= 2:
-        reasons.append(f"ÃÖ±Ù 3ÀÏ°£ È¸º¹ ½ÇÆĞ ÀÏ¼ö°¡ {int(row['recovery_fail_3d'])}ÀÏ·Î ±â´É ÀúÇÏ°¡ ÀÇ½ÉµË´Ï´Ù")
+        reasons.append(f"ìµœê·¼ 3ì¼ê°„ íšŒë³µ ì‹¤íŒ¨ ì¼ìˆ˜ê°€ {int(row['recovery_fail_3d'])}ì¼ë¡œ ê¸°ëŠ¥ ì €í•˜ê°€ ì˜ì‹¬ë©ë‹ˆë‹¤")
 
     if pd.notna(row["AM_7day_trend"]):
         if row["AM_7day_trend"] > 0.001:
-            reasons.append(f"È¯Ãø 7ÀÏ Ãß¼¼°¡ {row['AM_7day_trend']:+.4f}·Î »ó½Â ¹æÇâÀÔ´Ï´Ù")
+            reasons.append(f"í™˜ì¸¡ 7ì¼ ì¶”ì„¸ê°€ {row['AM_7day_trend']:+.4f}ë¡œ ìƒìŠ¹ ë°©í–¥ì…ë‹ˆë‹¤")
         elif row["AM_7day_trend"] < -0.0005:
-            reasons.append(f"È¯Ãø 7ÀÏ Ãß¼¼°¡ {row['AM_7day_trend']:+.4f}·Î È¸º¹ ¹æÇâÀÔ´Ï´Ù")
+            reasons.append(f"í™˜ì¸¡ 7ì¼ ì¶”ì„¸ê°€ {row['AM_7day_trend']:+.4f}ë¡œ íšŒë³µ ë°©í–¥ì…ë‹ˆë‹¤")
 
     if pd.notna(row["leg_3day_diff"]) and row["leg_3day_diff"] >= 0.004:
-        reasons.append(f"ÇÏÁö 3ÀÏ Æò±Õ Â÷ÀÌ°¡ {row['leg_3day_diff']:.4f}·Î Áõ°¡ÇØ Àü½Å ¿µÇâ °¡´É¼ºÀÌ ÀÖ½À´Ï´Ù")
+        reasons.append(f"í•˜ì§€ 3ì¼ í‰ê·  ì°¨ì´ê°€ {row['leg_3day_diff']:.4f}ë¡œ ì¦ê°€í•´ ì „ì‹  ì˜í–¥ ê°€ëŠ¥ì„±ì´ ìˆìŠµë‹ˆë‹¤")
 
     if pd.notna(row["leg_7day_trend"]) and row["leg_7day_trend"] > 0.001:
-        reasons.append(f"ÇÏÁö 7ÀÏ Ãß¼¼°¡ {row['leg_7day_trend']:+.4f}·Î »ó½Â ¹æÇâÀÔ´Ï´Ù")
+        reasons.append(f"í•˜ì§€ 7ì¼ ì¶”ì„¸ê°€ {row['leg_7day_trend']:+.4f}ë¡œ ìƒìŠ¹ ë°©í–¥ì…ë‹ˆë‹¤")
 
     if pd.notna(row["cv_7d"]) and row["cv_7d"] >= 1.0:
-        reasons.append(f"7ÀÏ º¯µ¿°è¼ö´Â {row['cv_7d']:.2f}%·Î º¯µ¿ Áõ°¡ »óÅÂÀÔ´Ï´Ù")
+        reasons.append(f"7ì¼ ë³€ë™ê³„ìˆ˜ëŠ” {row['cv_7d']:.2f}%ë¡œ ë³€ë™ ì¦ê°€ ìƒíƒœì…ë‹ˆë‹¤")
 
-    return " / ".join(reasons) if reasons else "¶Ñ·ÇÇÑ ÀÌ»ó ¼Ò°ßÀÌ µÎµå·¯ÁöÁö ¾Ê½À´Ï´Ù."
+    return " / ".join(reasons) if reasons else "ëšœë ·í•œ ì´ìƒ ì†Œê²¬ì´ ë‘ë“œëŸ¬ì§€ì§€ ì•ŠìŠµë‹ˆë‹¤."
 
 
 # ==========================================
-# 6. ±×·¡ÇÁ
+# 6. ê·¸ë˜í”„
 # ==========================================
 def create_figure(analyzed_df):
     fig, axes = plt.subplots(
@@ -686,36 +686,36 @@ def create_figure(analyzed_df):
     )
     ax1, ax2 = axes
 
-    ax1.plot(analyzed_df["°Ë»çÀÏ½Ã"], analyzed_df["È¯Ãø ¿ÀÀü"], marker="o", markersize=7, linewidth=2.2, label="È¯Ãø ¿ÀÀü°ª")
-    ax1.plot(analyzed_df["°Ë»çÀÏ½Ã"], analyzed_df["È¯Ãø ¿ÀÈÄ"], marker="^", linestyle="-", alpha=0.7, label="È¯Ãø ¿ÀÈÄ°ª")
-    ax1.plot(analyzed_df["°Ë»çÀÏ½Ã"], analyzed_df["°ÇÃø ¿ÀÀü"], marker="s", linestyle="--", alpha=0.8, label="°ÇÃø ¿ÀÀü°ª")
+    ax1.plot(analyzed_df["ê²€ì‚¬ì¼ì‹œ"], analyzed_df["í™˜ì¸¡ ì˜¤ì „"], marker="o", markersize=7, linewidth=2.2, label="í™˜ì¸¡ ì˜¤ì „ê°’")
+    ax1.plot(analyzed_df["ê²€ì‚¬ì¼ì‹œ"], analyzed_df["í™˜ì¸¡ ì˜¤í›„"], marker="^", linestyle="-", alpha=0.7, label="í™˜ì¸¡ ì˜¤í›„ê°’")
+    ax1.plot(analyzed_df["ê²€ì‚¬ì¼ì‹œ"], analyzed_df["ê±´ì¸¡ ì˜¤ì „"], marker="s", linestyle="--", alpha=0.8, label="ê±´ì¸¡ ì˜¤ì „ê°’")
 
     if pd.notna(analyzed_df["baseline_ref"].iloc[0]):
-        ax1.axhline(analyzed_df["baseline_ref"].iloc[0], color="red", linestyle=":", linewidth=2, label="ÃÊ±â ±âÁØ¼±")
+        ax1.axhline(analyzed_df["baseline_ref"].iloc[0], color="red", linestyle=":", linewidth=2, label="ì´ˆê¸° ê¸°ì¤€ì„ ")
 
     if len(analyzed_df) >= 3:
-        recent_3 = analyzed_df["°Ë»çÀÏ½Ã"].iloc[-3:]
-        ax1.axvspan(recent_3.iloc[0], recent_3.iloc[-1], color="#fff2cc", alpha=0.4, label="ÃÖ±Ù 3ÀÏ")
+        recent_3 = analyzed_df["ê²€ì‚¬ì¼ì‹œ"].iloc[-3:]
+        ax1.axvspan(recent_3.iloc[0], recent_3.iloc[-1], color="#fff2cc", alpha=0.4, label="ìµœê·¼ 3ì¼")
 
-    warns = analyzed_df[(analyzed_df["ratio"] >= 1.02) & analyzed_df["È¯Ãø ¿ÀÀü"].notna()]
+    warns = analyzed_df[(analyzed_df["ratio"] >= 1.02) & analyzed_df["í™˜ì¸¡ ì˜¤ì „"].notna()]
     if not warns.empty:
         ax1.scatter(
-            warns["°Ë»çÀÏ½Ã"],
-            warns["È¯Ãø ¿ÀÀü"] + 0.0006,
+            warns["ê²€ì‚¬ì¼ì‹œ"],
+            warns["í™˜ì¸¡ ì˜¤ì „"] + 0.0006,
             marker="*",
             color="red",
             s=220,
             zorder=10,
-            label="ºñÀ² °æ°è ½ÃÁ¡ (Ratio ¡Ã 1.02)"
+            label="ë¹„ìœ¨ ê²½ê³„ ì‹œì  (Ratio â‰¥ 1.02)"
         )
-        for d in warns["°Ë»çÀÏ½Ã"]:
+        for d in warns["ê²€ì‚¬ì¼ì‹œ"]:
             ax1.axvline(x=d, color="red", linestyle=":", alpha=0.25)
 
     for i in range(1, len(analyzed_df)):
-        prev_pm = analyzed_df["È¯Ãø ¿ÀÈÄ"].iloc[i - 1]
-        curr_am = analyzed_df["È¯Ãø ¿ÀÀü"].iloc[i]
-        prev_x = analyzed_df["°Ë»çÀÏ½Ã"].iloc[i - 1]
-        curr_x = analyzed_df["°Ë»çÀÏ½Ã"].iloc[i]
+        prev_pm = analyzed_df["í™˜ì¸¡ ì˜¤í›„"].iloc[i - 1]
+        curr_am = analyzed_df["í™˜ì¸¡ ì˜¤ì „"].iloc[i]
+        prev_x = analyzed_df["ê²€ì‚¬ì¼ì‹œ"].iloc[i - 1]
+        curr_x = analyzed_df["ê²€ì‚¬ì¼ì‹œ"].iloc[i]
 
         if pd.notna(prev_pm) and pd.notna(curr_am):
             arrow_color = "blue" if curr_am < prev_pm else "red"
@@ -726,17 +726,17 @@ def create_figure(analyzed_df):
                 arrowprops=dict(arrowstyle="->", color=arrow_color, linestyle="--", linewidth=1.2, alpha=0.8)
             )
 
-    ax1.set_title("È¯Ãø »óÁöÀÇ ÀÏÁß º¯È­¿Í ¾ß°£ È¸º¹ ÆĞÅÏ", fontsize=14, fontweight="bold")
-    ax1.set_ylabel("ECW ºñÀ²")
+    ax1.set_title("í™˜ì¸¡ ìƒì§€ì˜ ì¼ì¤‘ ë³€í™”ì™€ ì•¼ê°„ íšŒë³µ íŒ¨í„´", fontsize=14, fontweight="bold")
+    ax1.set_ylabel("ECW ë¹„ìœ¨")
     ax1.grid(True, linestyle="--", alpha=0.35)
     ax1.legend(loc="upper left", bbox_to_anchor=(1, 1))
 
-    ax2.plot(analyzed_df["°Ë»çÀÏ½Ã"], analyzed_df["leg_drift"], marker="o", linewidth=1.8, label="ÇÏÁö ±âÁØ¼± ÀÌÅ»")
-    ax2.plot(analyzed_df["°Ë»çÀÏ½Ã"], analyzed_df["trunk_drift"], marker="s", linewidth=1.8, label="Ã¼°£ ±âÁØ¼± ÀÌÅ»")
+    ax2.plot(analyzed_df["ê²€ì‚¬ì¼ì‹œ"], analyzed_df["leg_drift"], marker="o", linewidth=1.8, label="í•˜ì§€ ê¸°ì¤€ì„  ì´íƒˆ")
+    ax2.plot(analyzed_df["ê²€ì‚¬ì¼ì‹œ"], analyzed_df["trunk_drift"], marker="s", linewidth=1.8, label="ì²´ê°„ ê¸°ì¤€ì„  ì´íƒˆ")
     ax2.axhline(0, color="black", linewidth=1)
-    ax2.set_title("Àü½Å Ã¼¾× º¯È­ ÃßÀÌ (ÇÏÁö/Ã¼°£)", fontsize=12)
-    ax2.set_ylabel("±âÁØ¼± ´ëºñ º¯È­·®")
-    ax2.set_xlabel("°Ë»çÀÏ")
+    ax2.set_title("ì „ì‹  ì²´ì•¡ ë³€í™” ì¶”ì´ (í•˜ì§€/ì²´ê°„)", fontsize=12)
+    ax2.set_ylabel("ê¸°ì¤€ì„  ëŒ€ë¹„ ë³€í™”ëŸ‰")
+    ax2.set_xlabel("ê²€ì‚¬ì¼")
     ax2.grid(True, linestyle="--", alpha=0.35)
     ax2.legend(loc="upper left", bbox_to_anchor=(1, 1))
 
@@ -751,72 +751,72 @@ def build_pdf(patient_name, report_date, latest_row, fig):
     pdf, pdf_font = init_pdf()
 
     pdf.set_font(pdf_font, "", 16)
-    pdf.cell(0, 10, f"LEAP Á¤¹Ğ ºĞ¼® ¸®Æ÷Æ® - {patient_name}", ln=1, align="C")
+    pdf.cell(0, 10, f"LEAP ì •ë°€ ë¶„ì„ ë¦¬í¬íŠ¸ - {patient_name}", ln=1, align="C")
 
     pdf.set_font(pdf_font, "", 11)
-    pdf.cell(0, 8, f"ºĞ¼® ±âÁØÀÏ: {report_date}", ln=1)
-    pdf.cell(0, 8, f"Á¾ÇÕ ÆÇÁ¤: {latest_row['ÃÖÁ¾ ÆÇÁ¤']}", ln=1)
+    pdf.cell(0, 8, f"ë¶„ì„ ê¸°ì¤€ì¼: {report_date}", ln=1)
+    pdf.cell(0, 8, f"ì¢…í•© íŒì •: {latest_row['ìµœì¢… íŒì •']}", ln=1)
     pdf.ln(4)
 
     pdf.set_font(pdf_font, "", 13)
-    pdf.cell(0, 8, "[Á¾ÇÕ ÇØ¼®]", ln=1)
+    pdf.cell(0, 8, "[ì¢…í•© í•´ì„]", ln=1)
     pdf.set_font(pdf_font, "", 10)
     pdf.multi_cell(0, 6, make_dashboard_summary(latest_row))
     pdf.ln(3)
 
     pdf.set_font(pdf_font, "", 13)
-    pdf.cell(0, 8, "[ÇØ¼® ±âÁØ]", ln=1)
+    pdf.cell(0, 8, "[í•´ì„ ê¸°ì¤€]", ln=1)
     pdf.set_font(pdf_font, "", 10)
     pdf.multi_cell(
         0, 6,
-        "¾çÃø ºñÀ²: 1.05 ÀÌ»ó È®Áõ, 1.02 ÀÌ»ó °æ°è\n"
-        "¿ÀÀü ±âÁØ¼± ÀÌÅ»/3ÀÏ Æò±Õ Â÷ÀÌ: +0.004 ÀÌ»ó Áõ°¡, -0.002 ÀÌÇÏ °¨¼Ò\n"
-        "7ÀÏ Ãß¼¼: +0.001 ÃÊ°ú »ó½Â, -0.0005 ¹Ì¸¸ ÇÏ°­\n"
-        "È¸º¹ ½ÇÆĞ ÀÏ¼ö: 0ÀÏ Á¤»ó, 2ÀÏ ±â´É ÀúÇÏ, 3ÀÏ ÀÌ»ó Áö¼Ó ÀÌ»ó\n"
-        "7ÀÏ º¯µ¿°è¼ö: 1.5% ÀÌ»ó ºÒ¾ÈÁ¤"
+        "ì–‘ì¸¡ ë¹„ìœ¨: 1.05 ì´ìƒ í™•ì¦, 1.02 ì´ìƒ ê²½ê³„\n"
+        "ì˜¤ì „ ê¸°ì¤€ì„  ì´íƒˆ/3ì¼ í‰ê·  ì°¨ì´: +0.004 ì´ìƒ ì¦ê°€, -0.002 ì´í•˜ ê°ì†Œ\n"
+        "7ì¼ ì¶”ì„¸: +0.001 ì´ˆê³¼ ìƒìŠ¹, -0.0005 ë¯¸ë§Œ í•˜ê°•\n"
+        "íšŒë³µ ì‹¤íŒ¨ ì¼ìˆ˜: 0ì¼ ì •ìƒ, 2ì¼ ê¸°ëŠ¥ ì €í•˜, 3ì¼ ì´ìƒ ì§€ì† ì´ìƒ\n"
+        "7ì¼ ë³€ë™ê³„ìˆ˜: 1.5% ì´ìƒ ë¶ˆì•ˆì •"
     )
     pdf.ln(3)
 
     pdf.set_font(pdf_font, "", 13)
-    pdf.cell(0, 8, "[´çÀÏ »óÅÂ]", ln=1)
+    pdf.cell(0, 8, "[ë‹¹ì¼ ìƒíƒœ]", ln=1)
     pdf.set_font(pdf_font, "", 10)
     pdf.multi_cell(
         0, 6,
-        f"¾çÃø ºñÀ²Àº {fmt_ratio_interp(latest_row['ratio'])}, "
-        f"¿ÀÀü ±âÁØ¼± ÀÌÅ»Àº {fmt_diff_interp(latest_row['AM_drift'])}, "
-        f"³· ÃàÀû·®Àº {fmt_diff_interp(latest_row['day_gain'])}, "
-        f"¾ß°£ È¸º¹·®Àº {fmt_diff_interp(latest_row['night_recovery'])}ÀÔ´Ï´Ù."
+        f"ì–‘ì¸¡ ë¹„ìœ¨ì€ {fmt_ratio_interp(latest_row['ratio'])}, "
+        f"ì˜¤ì „ ê¸°ì¤€ì„  ì´íƒˆì€ {fmt_diff_interp(latest_row['AM_drift'])}, "
+        f"ë‚® ì¶•ì ëŸ‰ì€ {fmt_diff_interp(latest_row['day_gain'])}, "
+        f"ì•¼ê°„ íšŒë³µëŸ‰ì€ {fmt_diff_interp(latest_row['night_recovery'])}ì…ë‹ˆë‹¤."
     )
     pdf.ln(3)
 
     pdf.set_font(pdf_font, "", 13)
-    pdf.cell(0, 8, "[ÃÖ±Ù 3ÀÏ »óÅÂ]", ln=1)
+    pdf.cell(0, 8, "[ìµœê·¼ 3ì¼ ìƒíƒœ]", ln=1)
     pdf.set_font(pdf_font, "", 10)
     pdf.multi_cell(
         0, 6,
-        f"È¯Ãø 3ÀÏ Æò±Õ Â÷ÀÌ´Â {fmt_diff_interp(latest_row['am_3day_diff'])}, "
-        f"ÇÏÁö 3ÀÏ Æò±Õ Â÷ÀÌ´Â {fmt_diff_interp(latest_row['leg_3day_diff'])}, "
-        f"3ÀÏ°£ È¸º¹ ½ÇÆĞ ÀÏ¼ö´Â {fmt_days_interp(latest_row['recovery_fail_3d'])}ÀÔ´Ï´Ù."
+        f"í™˜ì¸¡ 3ì¼ í‰ê·  ì°¨ì´ëŠ” {fmt_diff_interp(latest_row['am_3day_diff'])}, "
+        f"í•˜ì§€ 3ì¼ í‰ê·  ì°¨ì´ëŠ” {fmt_diff_interp(latest_row['leg_3day_diff'])}, "
+        f"3ì¼ê°„ íšŒë³µ ì‹¤íŒ¨ ì¼ìˆ˜ëŠ” {fmt_days_interp(latest_row['recovery_fail_3d'])}ì…ë‹ˆë‹¤."
     )
     pdf.ln(3)
 
     pdf.set_font(pdf_font, "", 13)
-    pdf.cell(0, 8, "[ÃÖ±Ù 7ÀÏ Ãß¼¼]", ln=1)
+    pdf.cell(0, 8, "[ìµœê·¼ 7ì¼ ì¶”ì„¸]", ln=1)
     pdf.set_font(pdf_font, "", 10)
     pdf.multi_cell(
         0, 6,
-        f"È¯Ãø 7ÀÏ Ãß¼¼´Â {fmt_trend_interp(latest_row['AM_7day_trend'])}, "
-        f"ÇÏÁö 7ÀÏ Ãß¼¼´Â {fmt_trend_interp(latest_row['leg_7day_trend'])}, "
-        f"7ÀÏ°£ È¸º¹ ½ÇÆĞ ÀÏ¼ö´Â {fmt_days_interp(latest_row['fail_7d'])}, "
-        f"7ÀÏ º¯µ¿°è¼ö´Â {fmt_cv_interp(latest_row['cv_7d'])}ÀÔ´Ï´Ù."
+        f"í™˜ì¸¡ 7ì¼ ì¶”ì„¸ëŠ” {fmt_trend_interp(latest_row['AM_7day_trend'])}, "
+        f"í•˜ì§€ 7ì¼ ì¶”ì„¸ëŠ” {fmt_trend_interp(latest_row['leg_7day_trend'])}, "
+        f"7ì¼ê°„ íšŒë³µ ì‹¤íŒ¨ ì¼ìˆ˜ëŠ” {fmt_days_interp(latest_row['fail_7d'])}, "
+        f"7ì¼ ë³€ë™ê³„ìˆ˜ëŠ” {fmt_cv_interp(latest_row['cv_7d'])}ì…ë‹ˆë‹¤."
     )
     pdf.ln(3)
 
     pdf.set_font(pdf_font, "", 11)
     pdf.multi_cell(
         0, 6,
-        "»óÁö ±×·¡ÇÁ´Â È¯Ãø ¿ÀÀü/¿ÀÈÄ º¯È­¿Í °ÇÃø ºñ±³¸¦ ÅëÇØ ÀÏÁß ÃàÀû ¹× ¾ß°£ È¸º¹ ÆĞÅÏÀ» º¸¿©Áİ´Ï´Ù. "
-        "ÇÏÁö ¹× Ã¼°£ ±×·¡ÇÁ´Â Àü½Å Ã¼¾× º¯È­ ¿©ºÎ¸¦ ÇØ¼®ÇÏ±â À§ÇÑ º¸Á¶ ÁöÇ¥ÀÔ´Ï´Ù."
+        "ìƒì§€ ê·¸ë˜í”„ëŠ” í™˜ì¸¡ ì˜¤ì „/ì˜¤í›„ ë³€í™”ì™€ ê±´ì¸¡ ë¹„êµë¥¼ í†µí•´ ì¼ì¤‘ ì¶•ì  ë° ì•¼ê°„ íšŒë³µ íŒ¨í„´ì„ ë³´ì—¬ì¤ë‹ˆë‹¤. "
+        "í•˜ì§€ ë° ì²´ê°„ ê·¸ë˜í”„ëŠ” ì „ì‹  ì²´ì•¡ ë³€í™” ì—¬ë¶€ë¥¼ í•´ì„í•˜ê¸° ìœ„í•œ ë³´ì¡° ì§€í‘œì…ë‹ˆë‹¤."
     )
     pdf.ln(3)
 
@@ -837,15 +837,15 @@ def build_pdf(patient_name, report_date, latest_row, fig):
 
 
 # ==========================================
-# 8. ¸ŞÀÎ ¾Û
+# 8. ë©”ì¸ ì•±
 # ==========================================
 if check_password():
-    st.title("?? LEAP Á¤¹Ğ °¨º° Áø´Ü ½Ã½ºÅÛ")
-    st.markdown("¾çÃø ºñÀ², »óÁö ½Ã°è¿­, ÇÏÁö/Ã¼°£ Àü½Å¼º ÁöÇ¥¸¦ ÅëÇÕ Æò°¡ÇÕ´Ï´Ù.")
-    st.caption("½ÃÆ®¸í¿¡´Â ¹İµå½Ã È¯Ãø ¹æÇâ(¿ìÃø/ÁÂÃø)À» Æ÷ÇÔÇÏ¼¼¿ä. ¿¹: È«±æµ¿_¿ìÃø»óÁö")
+    st.title("ğŸ¥ LEAP ì •ë°€ ê°ë³„ ì§„ë‹¨ ì‹œìŠ¤í…œ")
+    st.markdown("ì–‘ì¸¡ ë¹„ìœ¨, ìƒì§€ ì‹œê³„ì—´, í•˜ì§€/ì²´ê°„ ì „ì‹ ì„± ì§€í‘œë¥¼ í†µí•© í‰ê°€í•©ë‹ˆë‹¤.")
+    st.caption("ì‹œíŠ¸ëª…ì—ëŠ” ë°˜ë“œì‹œ í™˜ì¸¡ ë°©í–¥(ìš°ì¸¡/ì¢Œì¸¡)ì„ í¬í•¨í•˜ì„¸ìš”. ì˜ˆ: í™ê¸¸ë™_ìš°ì¸¡ìƒì§€")
 
     uploaded_file = st.file_uploader(
-        "¸ÖÆ¼½ÃÆ® ¿¢¼¿ ¾÷·Îµå (±â°è Ãâ·Â ¿øº» ±×´ë·Î ¾÷·ÎµåÇÏ¼¼¿ä!)",
+        "ë©€í‹°ì‹œíŠ¸ ì—‘ì…€ ì—…ë¡œë“œ (ê¸°ê³„ ì¶œë ¥ ì›ë³¸ ê·¸ëŒ€ë¡œ ì—…ë¡œë“œí•˜ì„¸ìš”!)",
         type=["xlsx"]
     )
 
@@ -856,24 +856,24 @@ if check_password():
             _, report_date = extract_file_info(uploaded_file.name)
 
             mode = st.radio(
-                "ÀÛ¾÷ ¸ğµå ¼±ÅÃ:",
-                ["?? °³º° È¯ÀÚ Áø·á (1:1 »ó´ã¿ë)", "?? ÀüÃ¼ È¯ÀÚ ÀÏ°ı Ãâ·Â (PDF ¾ĞÃà)"],
+                "ì‘ì—… ëª¨ë“œ ì„ íƒ:",
+                ["ğŸ‘¤ ê°œë³„ í™˜ì ì§„ë£Œ (1:1 ìƒë‹´ìš©)", "ğŸ“¦ ì „ì²´ í™˜ì ì¼ê´„ ì¶œë ¥ (PDF ì••ì¶•)"],
                 horizontal=True
             )
             st.markdown("---")
 
-            if mode == "?? °³º° È¯ÀÚ Áø·á (1:1 »ó´ã¿ë)":
-                selected_sheet = st.selectbox("?? ºĞ¼®ÇÒ È¯ÀÚ(½ÃÆ®)¸¦ ¼±ÅÃÇÏ¼¼¿ä:", sheet_names)
+            if mode == "ğŸ‘¤ ê°œë³„ í™˜ì ì§„ë£Œ (1:1 ìƒë‹´ìš©)":
+                selected_sheet = st.selectbox("ğŸ“‹ ë¶„ì„í•  í™˜ì(ì‹œíŠ¸)ë¥¼ ì„ íƒí•˜ì„¸ìš”:", sheet_names)
                 patient_name = selected_sheet.split("_")[0]
 
                 raw_df = pd.read_excel(xls, sheet_name=selected_sheet)
                 formatted_df = format_raw_data(raw_df, selected_sheet)
                 daily_df = preprocess_data(formatted_df)
                 analyzed_df = calculate_metrics(daily_df)
-                analyzed_df["ÃÖÁ¾ ÆÇÁ¤"] = analyzed_df.apply(classify, axis=1)
+                analyzed_df["ìµœì¢… íŒì •"] = analyzed_df.apply(classify, axis=1)
                 latest_row = analyzed_df.iloc[-1]
 
-                st.markdown("## ?? Á¾ÇÕ ÇØ¼®")
+                st.markdown("## ğŸ§  ì¢…í•© í•´ì„")
                 st.success(make_dashboard_summary(latest_row))
 
                 top_left, top_right = st.columns([2.3, 1])
@@ -883,54 +883,54 @@ if check_password():
 
                     with col1:
                         st.info(
-                            f"""### ?? ´çÀÏ »óÅÂ
+                            f"""### ğŸ”µ ë‹¹ì¼ ìƒíƒœ
 
-**¾çÃø ºñÀ²**  
+**ì–‘ì¸¡ ë¹„ìœ¨**  
 {fmt_ratio_interp(latest_row['ratio'])}
 
-**¿ÀÀü ±âÁØ¼± ÀÌÅ»**  
+**ì˜¤ì „ ê¸°ì¤€ì„  ì´íƒˆ**  
 {fmt_diff_interp(latest_row['AM_drift'])}
 
-**³· ÃàÀû·®**  
+**ë‚® ì¶•ì ëŸ‰**  
 {fmt_diff_interp(latest_row['day_gain'])}
 
-**¾ß°£ È¸º¹·®**  
+**ì•¼ê°„ íšŒë³µëŸ‰**  
 {fmt_diff_interp(latest_row['night_recovery'])}
 """
                         )
 
                     with col2:
                         st.warning(
-                            f"""### ?? ÃÖ±Ù 3ÀÏ »óÅÂ
+                            f"""### ğŸŸ¡ ìµœê·¼ 3ì¼ ìƒíƒœ
 
-**È¯Ãø 3ÀÏ Æò±Õ Â÷ÀÌ**  
+**í™˜ì¸¡ 3ì¼ í‰ê·  ì°¨ì´**  
 {fmt_diff_interp(latest_row['am_3day_diff'])}
 
-**ÇÏÁö 3ÀÏ Æò±Õ Â÷ÀÌ**  
+**í•˜ì§€ 3ì¼ í‰ê·  ì°¨ì´**  
 {fmt_diff_interp(latest_row['leg_3day_diff'])}
 
-**3ÀÏ°£ È¸º¹ ½ÇÆĞ ÀÏ¼ö**  
+**3ì¼ê°„ íšŒë³µ ì‹¤íŒ¨ ì¼ìˆ˜**  
 {fmt_days_interp(latest_row['recovery_fail_3d'])}
 
-**3ÀÏ ratio °æ°í ÀÏ¼ö**  
+**3ì¼ ratio ê²½ê³  ì¼ìˆ˜**  
 {fmt_days_interp(latest_row['warn_ratio_3d'])}
 """
                         )
 
                     with col3:
                         st.error(
-                            f"""### ?? ÃÖ±Ù 7ÀÏ Ãß¼¼
+                            f"""### ğŸ”´ ìµœê·¼ 7ì¼ ì¶”ì„¸
 
-**È¯Ãø 7ÀÏ Ãß¼¼**  
+**í™˜ì¸¡ 7ì¼ ì¶”ì„¸**  
 {fmt_trend_interp(latest_row['AM_7day_trend'])}
 
-**ÇÏÁö 7ÀÏ Ãß¼¼**  
+**í•˜ì§€ 7ì¼ ì¶”ì„¸**  
 {fmt_trend_interp(latest_row['leg_7day_trend'])}
 
-**7ÀÏ°£ È¸º¹ ½ÇÆĞ ÀÏ¼ö**  
+**7ì¼ê°„ íšŒë³µ ì‹¤íŒ¨ ì¼ìˆ˜**  
 {fmt_days_interp(latest_row['fail_7d'])}
 
-**7ÀÏ º¯µ¿°è¼ö**  
+**7ì¼ ë³€ë™ê³„ìˆ˜**  
 {fmt_cv_interp(latest_row['cv_7d'])}
 """
                         )
@@ -938,38 +938,38 @@ if check_password():
                 with top_right:
                     render_interpretation_guide()
 
-                st.markdown("### ?? ½Ã°è¿­ ±Ù°Å ±×·¡ÇÁ")
-                st.caption("È¯Ãø ¿ÀÀü°ªÀº baseline »óÅÂ¸¦, ¿ÀÈÄ°ªÀº ÀÏÁß ÃàÀû »óÅÂ¸¦ ¹İ¿µÇÕ´Ï´Ù. ÇÏÁö?Ã¼°£ º¯È­´Â Àü½Å ¿µÇâ ¿©ºÎ¸¦ ÇØ¼®ÇÏ´Â µ¥ »ç¿ëµË´Ï´Ù.")
+                st.markdown("### ğŸ“ˆ ì‹œê³„ì—´ ê·¼ê±° ê·¸ë˜í”„")
+                st.caption("í™˜ì¸¡ ì˜¤ì „ê°’ì€ baseline ìƒíƒœë¥¼, ì˜¤í›„ê°’ì€ ì¼ì¤‘ ì¶•ì  ìƒíƒœë¥¼ ë°˜ì˜í•©ë‹ˆë‹¤. í•˜ì§€Â·ì²´ê°„ ë³€í™”ëŠ” ì „ì‹  ì˜í–¥ ì—¬ë¶€ë¥¼ í•´ì„í•˜ëŠ” ë° ì‚¬ìš©ë©ë‹ˆë‹¤.")
                 fig = create_figure(analyzed_df)
                 st.pyplot(fig)
 
-                st.markdown("### ?? »ó¼¼ ¼öÄ¡")
+                st.markdown("### ğŸ“‹ ìƒì„¸ ìˆ˜ì¹˜")
                 view_cols = [
-                    "°Ë»çÀÏ½Ã",
-                    "È¯Ãø ¿ÀÀü", "È¯Ãø ¿ÀÈÄ", "°ÇÃø ¿ÀÀü",
+                    "ê²€ì‚¬ì¼ì‹œ",
+                    "í™˜ì¸¡ ì˜¤ì „", "í™˜ì¸¡ ì˜¤í›„", "ê±´ì¸¡ ì˜¤ì „",
                     "ratio", "AM_drift", "day_gain", "night_recovery",
                     "am_3day_diff", "leg_3day_diff", "trunk_3day_diff",
                     "recovery_fail_3d", "warn_ratio_3d",
                     "AM_7day_trend", "leg_7day_trend", "trunk_7day_trend",
                     "fail_7d", "am_range_7d", "pm_range_7d", "cv_7d",
-                    "ÇÏÁö Æò±Õ", "leg_drift", "Ã¼°£", "trunk_drift",
-                    "ÃÖÁ¾ ÆÇÁ¤"
+                    "í•˜ì§€ í‰ê· ", "leg_drift", "ì²´ê°„", "trunk_drift",
+                    "ìµœì¢… íŒì •"
                 ]
                 st.dataframe(analyzed_df[view_cols], use_container_width=True)
 
                 pdf_bytes = build_pdf(patient_name, report_date, latest_row, fig)
                 st.download_button(
-                    label=f"?? [{patient_name}] ¸®Æ÷Æ® ´Ù¿î·Îµå (PDF)",
+                    label=f"ğŸ“¥ [{patient_name}] ë¦¬í¬íŠ¸ ë‹¤ìš´ë¡œë“œ (PDF)",
                     data=pdf_bytes,
-                    file_name=f"Á¤¹ĞºĞ¼®¸®Æ÷Æ®_{patient_name}_{report_date}.pdf",
+                    file_name=f"ì •ë°€ë¶„ì„ë¦¬í¬íŠ¸_{patient_name}_{report_date}.pdf",
                     mime="application/pdf",
                     key=f"pdf_{patient_name}"
                 )
 
             else:
-                st.subheader("?? ÀüÃ¼ È¯ÀÚ ÀÏ°ı ºĞ¼® ¹× ¸®Æ÷Æ® ÀÚµ¿ »ı¼º")
+                st.subheader("ğŸ“¦ ì „ì²´ í™˜ì ì¼ê´„ ë¶„ì„ ë° ë¦¬í¬íŠ¸ ìë™ ìƒì„±")
 
-                if st.button("¢º? ÀüÃ¼ ÀÏ°ı ºĞ¼® ½ÇÇà"):
+                if st.button("â–¶ï¸ ì „ì²´ ì¼ê´„ ë¶„ì„ ì‹¤í–‰"):
                     progress_bar = st.progress(0)
                     summary_data = []
                     zip_buffer = io.BytesIO()
@@ -983,50 +983,50 @@ if check_password():
                                 formatted_df = format_raw_data(raw_df, sheet)
                                 daily_df = preprocess_data(formatted_df)
                                 analyzed_df = calculate_metrics(daily_df)
-                                analyzed_df["ÃÖÁ¾ ÆÇÁ¤"] = analyzed_df.apply(classify, axis=1)
+                                analyzed_df["ìµœì¢… íŒì •"] = analyzed_df.apply(classify, axis=1)
                                 latest_row = analyzed_df.iloc[-1]
 
-                                final_label = latest_row["ÃÖÁ¾ ÆÇÁ¤"]
+                                final_label = latest_row["ìµœì¢… íŒì •"]
                                 summary_data.append({
-                                    "È¯ÀÚ¸í": patient_name_sheet,
-                                    "È¯Ãø¹æÇâ": infer_affected_side(sheet),
-                                    "ÃÖÁ¾ ÆÇÁ¤": final_label,
-                                    "À§Çèµµ": severity_rank(final_label),
-                                    "ÃÖ±Ù Ratio": safe_fmt(latest_row["ratio"], ".3f"),
-                                    "È¯Ãø 3ÀÏ Æò±Õ Â÷ÀÌ": safe_fmt(latest_row["am_3day_diff"]),
-                                    "ÇÏÁö 3ÀÏ Æò±Õ Â÷ÀÌ": safe_fmt(latest_row["leg_3day_diff"]),
-                                    "È¯Ãø 7ÀÏ Ãß¼¼": safe_fmt(latest_row["AM_7day_trend"]),
-                                    "ÇÏÁö 7ÀÏ Ãß¼¼": safe_fmt(latest_row["leg_7day_trend"]),
-                                    "ºñ°í": make_dashboard_summary(latest_row)
+                                    "í™˜ìëª…": patient_name_sheet,
+                                    "í™˜ì¸¡ë°©í–¥": infer_affected_side(sheet),
+                                    "ìµœì¢… íŒì •": final_label,
+                                    "ìœ„í—˜ë„": severity_rank(final_label),
+                                    "ìµœê·¼ Ratio": safe_fmt(latest_row["ratio"], ".3f"),
+                                    "í™˜ì¸¡ 3ì¼ í‰ê·  ì°¨ì´": safe_fmt(latest_row["am_3day_diff"]),
+                                    "í•˜ì§€ 3ì¼ í‰ê·  ì°¨ì´": safe_fmt(latest_row["leg_3day_diff"]),
+                                    "í™˜ì¸¡ 7ì¼ ì¶”ì„¸": safe_fmt(latest_row["AM_7day_trend"]),
+                                    "í•˜ì§€ 7ì¼ ì¶”ì„¸": safe_fmt(latest_row["leg_7day_trend"]),
+                                    "ë¹„ê³ ": make_dashboard_summary(latest_row)
                                 })
 
                                 fig = create_figure(analyzed_df)
                                 pdf_bytes = build_pdf(patient_name_sheet, report_date, latest_row, fig)
                                 plt.close(fig)
 
-                                pdf_filename = f"¸®Æ÷Æ®_{patient_name_sheet}_{report_date}.pdf"
+                                pdf_filename = f"ë¦¬í¬íŠ¸_{patient_name_sheet}_{report_date}.pdf"
                                 zip_file.writestr(pdf_filename, pdf_bytes)
 
                             except Exception as e:
-                                st.warning(f"?? '{sheet}' È¯ÀÚ Ã³¸® Áß ¿À·ù ¹ß»ı: {e}")
+                                st.warning(f"âš ï¸ '{sheet}' í™˜ì ì²˜ë¦¬ ì¤‘ ì˜¤ë¥˜ ë°œìƒ: {e}")
 
                             progress_bar.progress((i + 1) / len(sheet_names))
 
-                    st.success("? ¸ğµç È¯ÀÚÀÇ ºĞ¼® ¹× PDF ¸®Æ÷Æ® »ı¼ºÀÌ ¿Ï·áµÇ¾ú½À´Ï´Ù!")
-                    st.markdown("### ?? ÀüÃ¼ È¯ÀÚ ÇöÈ² ¿ä¾àÆÇ")
+                    st.success("âœ… ëª¨ë“  í™˜ìì˜ ë¶„ì„ ë° PDF ë¦¬í¬íŠ¸ ìƒì„±ì´ ì™„ë£Œë˜ì—ˆìŠµë‹ˆë‹¤!")
+                    st.markdown("### ğŸ“Š ì „ì²´ í™˜ì í˜„í™© ìš”ì•½íŒ")
 
                     summary_df = pd.DataFrame(summary_data).sort_values(
-                        by=["À§Çèµµ", "È¯ÀÚ¸í"], ascending=[False, True]
+                        by=["ìœ„í—˜ë„", "í™˜ìëª…"], ascending=[False, True]
                     )
                     st.dataframe(summary_df, use_container_width=True)
 
                     st.markdown("---")
                     st.download_button(
-                        label="?? ¹­À½ ¸®Æ÷Æ® ´Ù¿î·Îµå (ÀüÃ¼ È¯ÀÚ PDF ¾ĞÃàÆÄÀÏ)",
+                        label="ğŸ“¦ ë¬¶ìŒ ë¦¬í¬íŠ¸ ë‹¤ìš´ë¡œë“œ (ì „ì²´ í™˜ì PDF ì••ì¶•íŒŒì¼)",
                         data=zip_buffer.getvalue(),
-                        file_name=f"ÀüÃ¼È¯ÀÚ¸®Æ÷Æ®_ÀÏ°ıÃâ·Â_{report_date}.zip",
+                        file_name=f"ì „ì²´í™˜ìë¦¬í¬íŠ¸_ì¼ê´„ì¶œë ¥_{report_date}.zip",
                         mime="application/zip"
                     )
 
         except Exception as e:
-            st.error(f"¿À·ù°¡ ¹ß»ıÇß½À´Ï´Ù. (¿¡·¯: {e})")
+            st.error(f"ì˜¤ë¥˜ê°€ ë°œìƒí–ˆìŠµë‹ˆë‹¤. (ì—ëŸ¬: {e})")
