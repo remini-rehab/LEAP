@@ -172,6 +172,17 @@ if uploaded_file:
 
     st.pyplot(fig)
 
+    # --- 그래프 하단 범례 및 별표 설명 추가 ---
+    st.markdown(f"""
+        <div style="background-color: #fff5f5; padding: 15px; border-radius: 10px; border: 1px solid #ffe3e3; margin-top: -10px;">
+            <p style="color: #d63031; font-size: 0.95rem; margin: 0; line-height: 1.6;">
+                <strong><span style="font-size: 1.2rem;">★</span> 빨간 별표 안내:</strong> <br>
+                해당 날짜의 <strong>양측 비율(Ratio)이 1.02를 초과</strong>한 지점입니다. <br>
+                이는 임상적으로 림프 부종의 <strong>경계치 혹은 악화 구간</strong>에 진입했음을 의미하며, 
+                환측의 체액 정체가 건측 대비 확연히 높아진 상태이므로 집중적인 관리가 필요합니다.
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
     # 리포트 다운로드
     st.write("---")
     p_name = str(selected).split('_')[0]
