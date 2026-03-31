@@ -44,6 +44,7 @@ def analyze_data(df_raw, sheet_name):
             if key in raw_col:
                 df = df.rename(columns={raw_col: standard})
 
+    # 환측 판단 (시트명 기준)
     side = "우측" if "우측" in str(sheet_name) else "좌측"
     df["검사일시"] = pd.to_datetime(df["검사일시"], errors="coerce")
     df = df.dropna(subset=["검사일시"]).sort_values("검사일시")
@@ -128,7 +129,7 @@ if uploaded_file:
         'am_r7': r7["환측 오전"].max() - r7["환측 오전"].min()
     }
 
-    # --- 대시보드 디자인 (따옴표 버그 수정 완료) ---
+    # --- 대시보드 박스 디자인 ---
     c1, c2, c3 = st.columns(3)
     
     with c1:
@@ -145,50 +146,4 @@ if uploaded_file:
         st.markdown(f"""
             <div style="background-color: #FFF9E1; padding: 20px; border-radius: 15px; height: 135px;">
                 <h4 style="color: #856404; margin-top: 0;">🟡 3일</h4>
-                <p style="color: #856404; font-size: 18px; font-weight: bold;">
-                    실패: {stats['f3']}회 경고: {stats['w3']}회
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-    with c3:
-        st.markdown(f"""
-            <div style="background-color: #FFE8E8; padding: 20px; border-radius: 15px; height: 135px;">
-                <h4 style="color: #A94442; margin-top: 0;">🔴 7일</h4>
-                <p style="color: #A94442; font-size: 15px; font-weight: bold;">
-                    CV: {stats['cv7']:.2f}% 오전변동: {stats['am_r7']:.4f}<br>
-                    하지이탈: {latest['leg_drift']:.4f}
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
-
-    # --- 그래프 ---
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), gridspec_kw={'height_ratios': [1.8, 1]})
-    ax1.plot(df["검사일시"], df["환측 오전"], 'o-', color='#FF9999', label="환측 오전", linewidth=2, markersize=6)
-    ax1.plot(df["검사일시"], df["환측 오후"], '^-', color='#FF0000', label="환측 오후", linewidth=1.5)
-    ax1.plot(df["검사일시"], df["건측 오전"], 's--', color='#ADD8E6', alpha=0.5, label="건측 오전")
-    ax1.axhline(b_arm, color='red', linestyle=':', alpha=0.4, label="Baseline")
-    
-    warns = df[df["ratio"] > 1.02]
-    if not warns.empty:
-        ax1.scatter(warns["검사일시"], warns["환측 오전"] + 0.0006, marker='*', color='red', s=250, zorder=10)
-    
-    ax1.set_title("상지 동태 분석 (★: 위험 경계치 초과)", fontsize=13, weight='bold')
-    ax1.legend(loc='upper left', bbox_to_anchor=(1, 1))
-    ax1.grid(True, alpha=0.2)
-    
-    ax2.plot(df["검사일시"], df["leg_drift"], 'o-', color='purple', label="하지 이탈", markersize=5)
-    ax2.plot(df["검사일시"], df["trunk_drift"], 's-', color='green', label="체간 이탈", markersize=5)
-    ax2.axhline(0, color='black', linewidth=1)
-    ax2.set_title("전신 기준선 이탈 추이", fontsize=11)
-    ax2.legend(loc='upper left', bbox_to_anchor=(1, 1))
-    ax2.grid(True, alpha=0.2)
-    
-    st.pyplot(fig)
-
-    # 리포트 출력 버튼
-    st.markdown("---")
-    patient_name = str(selected).split('_')[0]
-    pdf_bytes = build_pdf(patient_name, str(latest['Date']), latest, stats, fig)
-    st.download_button(
-        label=f"📥 [{patient_name}] 정밀 리포트 다운
+                <p
