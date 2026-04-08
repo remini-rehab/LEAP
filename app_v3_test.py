@@ -12,13 +12,13 @@ import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 from fpdf import FPDF
 
-random.seed(42)  # 테스트 단계에서는 메시지 랜덤성 고정
+random.seed(42)
 
 
 # ==========================================
 # 0. 기본 설정
 # ==========================================
-st.set_page_config(page_title="LEAP V2 테스트 시스템", layout="wide")
+st.set_page_config(page_title="LEAP V3 테스트 시스템", layout="wide")
 
 FONT_PATH = "NanumBarunGothic.ttf"
 if os.path.exists(FONT_PATH):
@@ -104,7 +104,7 @@ def check_password():
         st.session_state["password_entered"] = False
 
     if not st.session_state["password_entered"]:
-        st.title("🔒 LEAP V2 접근")
+        st.title("🔒 LEAP V3 접근")
         password = st.text_input("접속 비밀번호를 입력하세요:", type="password")
         if st.button("로그인"):
             admin_pw = st.secrets.get("admin_password", None)
@@ -120,13 +120,13 @@ def check_password():
 # ==========================================
 # 2. 해석 표시 유틸
 # ==========================================
-def calculate_slope(series):
+def calculate_corr(series):
     s = pd.to_numeric(series, errors="coerce").dropna()
     if len(s) < 3:
         return np.nan
     x = np.arange(len(s))
     y = s.values
-    return np.polyfit(x, y, 1)[0]
+    return np.corrcoef(x, y)[0, 1]
 
 
 def fmt_ratio_interp(x):
@@ -147,6 +147,20 @@ def fmt_diff_interp(x):
     elif x <= -0.002:
         return f"{x:+.4f} (↓ 감소)"
     return f"{x:+.4f} (→ 안정)"
+
+
+def fmt_compare_interp(x):
+    if pd.isna(x):
+        return "NA"
+    if x >= 0.004:
+        return f"{x:+.4f} (이전 구간 대비 뚜렷한 증가)"
+    elif x >= 0.002:
+        return f"{x:+.4f} (이전 구간 대비 증가)"
+    elif x <= -0.004:
+        return f"{x:+.4f} (이전 구간 대비 뚜렷한 감소)"
+    elif x <= -0.002:
+        return f"{x:+.4f} (이전 구간 대비 감소)"
+    return f"{x:+.4f} (이전 구간 대비 큰 변화 없음)"
 
 
 def fmt_days_interp(x):
@@ -175,11 +189,11 @@ def fmt_cv_interp(x):
 def fmt_trend_interp(x):
     if pd.isna(x):
         return "NA"
-    if x > 0.001:
-        return f"{x:+.4f} (↑ 증가)"
-    elif x < -0.0005:
-        return f"{x:+.4f} (↓ 감소)"
-    return f"{x:+.4f} (→ 안정)"
+    if x >= 0.5:
+        return f"{x:+.2f} (↑ 상승 추세)"
+    elif x <= -0.5:
+        return f"{x:+.2f} (↓ 회복 추세)"
+    return f"{x:+.2f} (→ 안정)"
 
 
 # ==========================================
@@ -191,15 +205,15 @@ MESSAGE_BANK = {
             "일간 측정 자료를 종합하여 현재 상태를 해석합니다.",
             "최근 측정 자료를 바탕으로 임상적 해석을 제시합니다."
         ],
-        "structure_normal": ["구조적 비대칭은 뚜렷하지 않습니다."],
-        "structure_borderline": ["경계 수준의 구조적 비대칭이 관찰됩니다."],
-        "structure_confirmed": ["구조적 비대칭이 확증 범위입니다."],
+        "structure_normal": ["양측 비율은 정상 범위입니다."],
+        "structure_borderline": ["양측 비율이 경계 수준입니다."],
+        "structure_confirmed": ["양측 비율이 확증 범위입니다."],
         "state_up": ["최근 3일 기준 국소 변화는 증가 상태입니다."],
         "state_down": ["최근 3일 기준 국소 변화는 감소 상태입니다."],
         "state_stable": ["최근 3일 기준 국소 변화는 비교적 안정적입니다."],
-        "function_mild": ["최근 회복 실패는 경미한 수준입니다."],
-        "function_impaired": ["최근 회복 실패가 반복되어 기능 저하가 의심됩니다."],
-        "function_persistent": ["회복 기능 저하가 지속적으로 나타납니다."],
+        "function_mild": ["최근 야간 회복 실패는 경미한 수준입니다."],
+        "function_impaired": ["최근 야간 회복 실패가 반복되어 기능 저하가 의심됩니다."],
+        "function_persistent": ["야간 회복 기능 저하가 지속적으로 나타납니다."],
         "trend_up": ["최근 7일 추세는 상승 방향입니다."],
         "trend_down": ["최근 7일 추세는 회복 방향입니다."],
         "trend_stable": ["최근 7일 추세는 뚜렷한 방향성 없이 안정적입니다."],
@@ -228,9 +242,9 @@ MESSAGE_BANK = {
             "일간 측정하신 내용을 종합하여 분석 결과를 전해드립니다.",
             "최근 측정 데이터를 바탕으로 현재 상태를 분석해드리겠습니다."
         ],
-        "structure_normal": ["현재 수술 받으신 팔과 정상 팔의 차이는 뚜렷하지 않습니다."],
-        "structure_borderline": ["현재 수술 받으신 팔과 정상 팔 사이에 약한 차이가 보입니다."],
-        "structure_confirmed": ["현재 수술 받으신 팔과 정상 팔 사이의 차이가 분명하게 확인됩니다."],
+        "structure_normal": ["현재 수술 받으신 팔과 반대쪽 팔의 체액 차이는 뚜렷하지 않습니다."],
+        "structure_borderline": ["현재 수술 받으신 팔과 반대쪽 팔 사이에 약한 차이가 보입니다."],
+        "structure_confirmed": ["현재 수술 받으신 팔과 반대쪽 팔 사이의 차이가 분명하게 확인됩니다."],
         "state_up": ["최근 3일 기준으로 수술 받으신 팔의 체수분 변화가 증가하는 경향입니다."],
         "state_down": ["최근 3일 기준으로 수술 받으신 팔의 체수분 변화는 감소 상태입니다."],
         "state_stable": ["최근 3일 기준으로 수술 받으신 팔의 체수분 변화는 비교적 안정적입니다."],
@@ -333,9 +347,9 @@ def select_message_codes(row):
         codes.append("function_mild")
 
     if pd.notna(am_7day_trend):
-        if am_7day_trend > 0.001:
+        if am_7day_trend >= 0.5:
             codes.append("trend_up")
-        elif am_7day_trend < -0.0005:
+        elif am_7day_trend <= -0.5:
             codes.append("trend_down")
         else:
             codes.append("trend_stable")
@@ -391,6 +405,27 @@ def render_message(row, audience="patient", patient_name="환자"):
         lines.append(text)
 
     return "\n\n".join(lines)
+
+
+def build_clinician_comparison_comment(row):
+    comments = []
+
+    a3 = row.get("am_3d_vs_prev3d", np.nan)
+    a7 = row.get("am_7d_vs_prev7d", np.nan)
+
+    if pd.notna(a3):
+        if a3 >= 0.002:
+            comments.append("최근 3일 평균은 직전 3일 대비 상승했습니다.")
+        elif a3 <= -0.002:
+            comments.append("최근 3일 평균은 직전 3일 대비 감소했습니다.")
+
+    if pd.notna(a7):
+        if a7 >= 0.002:
+            comments.append("최근 7일 평균은 직전 7일 대비 상승했습니다.")
+        elif a7 <= -0.002:
+            comments.append("최근 7일 평균은 직전 7일 대비 감소했습니다.")
+
+    return " ".join(comments)
 
 
 # ==========================================
@@ -534,6 +569,7 @@ def calculate_metrics(df, baseline_days=3):
     df["leg_baseline_ref"] = leg_baseline
     df["trunk_baseline_ref"] = trunk_baseline
 
+    # 당일
     df["ratio"] = df["환측 오전"] / df["건측 오전"]
     df["AM_drift"] = df["환측 오전"] - arm_baseline
     df["day_gain"] = df["환측 오후"] - df["환측 오전"]
@@ -551,6 +587,7 @@ def calculate_metrics(df, baseline_days=3):
         np.where(df["night_recovery"] >= 0, 1, 0)
     )
 
+    # 3일
     df["recovery_fail_3d"] = df["recovery_fail"].rolling(3, min_periods=1).sum()
 
     df["am_3day_mean"] = df["환측 오전"].rolling(3, min_periods=2).mean()
@@ -562,16 +599,17 @@ def calculate_metrics(df, baseline_days=3):
     df["trunk_3day_mean"] = df["체간"].rolling(3, min_periods=2).mean()
     df["trunk_3day_diff"] = df["trunk_3day_mean"] - trunk_baseline
 
+    # 7일
     df["AM_7day_mean"] = df["환측 오전"].rolling(7, min_periods=3).mean()
-    df["AM_7day_trend"] = df["환측 오전"].rolling(7, min_periods=3).apply(calculate_slope, raw=False)
+    df["AM_7day_trend"] = df["환측 오전"].rolling(7, min_periods=3).apply(calculate_corr, raw=False)
 
     df["leg_7day_mean"] = df["하지 평균"].rolling(7, min_periods=3).mean()
     df["leg_7day_diff"] = df["leg_7day_mean"] - leg_baseline
-    df["leg_7day_trend"] = df["하지 평균"].rolling(7, min_periods=3).apply(calculate_slope, raw=False)
+    df["leg_7day_trend"] = df["하지 평균"].rolling(7, min_periods=3).apply(calculate_corr, raw=False)
 
     df["trunk_7day_mean"] = df["체간"].rolling(7, min_periods=3).mean()
     df["trunk_7day_diff"] = df["trunk_7day_mean"] - trunk_baseline
-    df["trunk_7day_trend"] = df["체간"].rolling(7, min_periods=3).apply(calculate_slope, raw=False)
+    df["trunk_7day_trend"] = df["체간"].rolling(7, min_periods=3).apply(calculate_corr, raw=False)
 
     df["leg_drift"] = df["하지 평균"] - leg_baseline
     df["trunk_drift"] = df["체간"] - trunk_baseline
@@ -620,6 +658,44 @@ def calculate_metrics(df, baseline_days=3):
         warn_ratio_3d.append(int((r3["ratio"] > 1.02).sum()))
     df["warn_ratio_3d"] = warn_ratio_3d
 
+    # 이전 구간 비교 지표
+    am_3d_vs_prev3d = []
+    leg_3d_vs_prev3d = []
+    am_7d_vs_prev7d = []
+    leg_7d_vs_prev7d = []
+
+    for i in range(len(df)):
+        recent_3 = df.iloc[max(0, i - 2): i + 1]
+        prev_3 = df.iloc[max(0, i - 5): max(0, i - 2)]
+
+        if recent_3["환측 오전"].notna().sum() >= 2 and prev_3["환측 오전"].notna().sum() >= 2:
+            am_3d_vs_prev3d.append(recent_3["환측 오전"].mean() - prev_3["환측 오전"].mean())
+        else:
+            am_3d_vs_prev3d.append(np.nan)
+
+        if recent_3["하지 평균"].notna().sum() >= 2 and prev_3["하지 평균"].notna().sum() >= 2:
+            leg_3d_vs_prev3d.append(recent_3["하지 평균"].mean() - prev_3["하지 평균"].mean())
+        else:
+            leg_3d_vs_prev3d.append(np.nan)
+
+        recent_7 = df.iloc[max(0, i - 6): i + 1]
+        prev_7 = df.iloc[max(0, i - 13): max(0, i - 6)]
+
+        if recent_7["환측 오전"].notna().sum() >= 3 and prev_7["환측 오전"].notna().sum() >= 3:
+            am_7d_vs_prev7d.append(recent_7["환측 오전"].mean() - prev_7["환측 오전"].mean())
+        else:
+            am_7d_vs_prev7d.append(np.nan)
+
+        if recent_7["하지 평균"].notna().sum() >= 3 and prev_7["하지 평균"].notna().sum() >= 3:
+            leg_7d_vs_prev7d.append(recent_7["하지 평균"].mean() - prev_7["하지 평균"].mean())
+        else:
+            leg_7d_vs_prev7d.append(np.nan)
+
+    df["am_3d_vs_prev3d"] = am_3d_vs_prev3d
+    df["leg_3d_vs_prev3d"] = leg_3d_vs_prev3d
+    df["am_7d_vs_prev7d"] = am_7d_vs_prev7d
+    df["leg_7d_vs_prev7d"] = leg_7d_vs_prev7d
+
     return df
 
 
@@ -651,12 +727,18 @@ def calculate_scores(row):
             local_score += 1
 
     if pd.notna(row["AM_7day_trend"]):
-        if row["AM_7day_trend"] > 0.001:
+        if row["AM_7day_trend"] >= 0.5:
             local_score += 2
-        elif row["AM_7day_trend"] > 0.0005:
+        elif row["AM_7day_trend"] >= 0.3:
             local_score += 1
-        elif row["AM_7day_trend"] < -0.0005:
+        elif row["AM_7day_trend"] <= -0.5:
             local_score -= 1
+
+    if pd.notna(row["cv_7d"]):
+        if row["cv_7d"] >= 1.5:
+            local_score += 2
+        elif row["cv_7d"] >= 1.0:
+            local_score += 1
 
     if pd.notna(row["leg_3day_diff"]):
         if row["leg_3day_diff"] >= 0.004:
@@ -671,15 +753,15 @@ def calculate_scores(row):
             systemic_score += 1
 
     if pd.notna(row["leg_7day_trend"]):
-        if row["leg_7day_trend"] > 0.001:
+        if row["leg_7day_trend"] >= 0.5:
             systemic_score += 2
-        elif row["leg_7day_trend"] > 0.0005:
+        elif row["leg_7day_trend"] >= 0.3:
             systemic_score += 1
 
     if pd.notna(row["trunk_7day_trend"]):
-        if row["trunk_7day_trend"] > 0.001:
+        if row["trunk_7day_trend"] >= 0.5:
             systemic_score += 2
-        elif row["trunk_7day_trend"] > 0.0005:
+        elif row["trunk_7day_trend"] >= 0.3:
             systemic_score += 1
 
     if pd.notna(row["fail_7d"]) and row["fail_7d"] >= 3:
@@ -694,6 +776,8 @@ def classify(row):
     ratio = row.get("ratio", np.nan)
     am_3day_diff = row.get("am_3day_diff", np.nan)
     am_7day_trend = row.get("AM_7day_trend", np.nan)
+    cv_7d = row.get("cv_7d", np.nan)
+    recovery_fail_3d = row.get("recovery_fail_3d", np.nan)
 
     if systemic_score >= 3:
         if local_score >= 3:
@@ -712,16 +796,25 @@ def classify(row):
 
     if (
         pd.notna(am_3day_diff) and am_3day_diff >= 0.004 and
-        pd.notna(am_7day_trend) and am_7day_trend > 0.0005
+        pd.notna(am_7day_trend) and am_7day_trend >= 0.5
     ):
-        return "🟣 초기 림프 dysfunction (동태 이상)"
+        if pd.notna(cv_7d) and cv_7d >= 1.0:
+            return "🟣 초기 림프 dysfunction (변동성 동반 상승)"
+        return "🟣 초기 림프 dysfunction (지속 상승)"
+
+    if (
+        pd.notna(ratio) and ratio < 1.05 and
+        pd.notna(cv_7d) and cv_7d >= 1.5 and
+        pd.notna(recovery_fail_3d) and recovery_fail_3d >= 2
+    ):
+        return "🟣 초기 림프 dysfunction 의심 (불안정 패턴)"
 
     if local_score >= 2:
         return "🟡 주의 관찰 필요"
 
     if (
         pd.notna(am_3day_diff) and am_3day_diff <= -0.002 and
-        pd.notna(am_7day_trend) and am_7day_trend < -0.0005
+        pd.notna(am_7day_trend) and am_7day_trend <= -0.5
     ):
         return "🔵 회복 상태"
 
@@ -738,16 +831,31 @@ def create_figure(analyzed_df):
     )
     ax1, ax2 = axes
 
-    ax1.plot(analyzed_df["검사일시"], analyzed_df["환측 오전"], marker="o", markersize=7, linewidth=2.2, label="환측 오전값")
-    ax1.plot(analyzed_df["검사일시"], analyzed_df["환측 오후"], marker="^", linestyle="-", alpha=0.7, label="환측 오후값")
-    ax1.plot(analyzed_df["검사일시"], analyzed_df["건측 오전"], marker="s", linestyle="--", alpha=0.8, label="건측 오전값")
+    ax1.plot(
+        analyzed_df["검사일시"], analyzed_df["환측 오전"],
+        marker="o", markersize=7, linewidth=2.2, label="환측 오전값"
+    )
+    ax1.plot(
+        analyzed_df["검사일시"], analyzed_df["환측 오후"],
+        marker="^", linestyle="-", alpha=0.7, label="환측 오후값"
+    )
+    ax1.plot(
+        analyzed_df["검사일시"], analyzed_df["건측 오전"],
+        marker="s", linestyle="--", alpha=0.8, label="건측 오전값"
+    )
 
     if pd.notna(analyzed_df["baseline_ref"].iloc[0]):
-        ax1.axhline(analyzed_df["baseline_ref"].iloc[0], color="red", linestyle=":", linewidth=2, label="초기 기준선")
+        ax1.axhline(
+            analyzed_df["baseline_ref"].iloc[0],
+            color="red", linestyle=":", linewidth=2, label="초기 기준선"
+        )
 
     if len(analyzed_df) >= 3:
         recent_3 = analyzed_df["검사일시"].iloc[-3:]
-        ax1.axvspan(recent_3.iloc[0], recent_3.iloc[-1], color="#fff2cc", alpha=0.4, label="최근 3일")
+        ax1.axvspan(
+            recent_3.iloc[0], recent_3.iloc[-1],
+            color="#fff2cc", alpha=0.4, label="최근 3일"
+        )
 
     warns = analyzed_df[(analyzed_df["ratio"] >= 1.02) & analyzed_df["환측 오전"].notna()]
     if not warns.empty:
@@ -758,19 +866,55 @@ def create_figure(analyzed_df):
             color="red",
             s=220,
             zorder=10,
-            label="비율 경계 시점 (Ratio ≥ 1.02)"
+            label="양측 비율 경계 시점 (Ratio ≥ 1.02)"
         )
 
-    ax1.set_title("환측 상지의 일중 변화와 야간 회복 패턴", fontsize=14, fontweight="bold")
+    ax1.set_title("환측 상지의 일중 변화와 양측 비율 패턴", fontsize=14, fontweight="bold")
     ax1.set_ylabel("ECW 비율")
     ax1.grid(True, linestyle="--", alpha=0.35)
     ax1.legend(loc="upper left", bbox_to_anchor=(1, 1))
 
-    ax2.plot(analyzed_df["검사일시"], analyzed_df["leg_drift"], marker="o", linewidth=1.8, label="하지 기준선 이탈")
-    ax2.plot(analyzed_df["검사일시"], analyzed_df["trunk_drift"], marker="s", linewidth=1.8, label="체간 기준선 이탈")
+    ax2.plot(
+        analyzed_df["검사일시"],
+        analyzed_df["night_recovery"],
+        marker="D",
+        linewidth=2.0,
+        label="야간 회복량"
+    )
+    ax2.plot(
+        analyzed_df["검사일시"],
+        analyzed_df["leg_drift"],
+        marker="o",
+        linewidth=1.5,
+        alpha=0.8,
+        label="하지 기준선 이탈"
+    )
+    ax2.plot(
+        analyzed_df["검사일시"],
+        analyzed_df["trunk_drift"],
+        marker="s",
+        linewidth=1.5,
+        alpha=0.8,
+        label="체간 기준선 이탈"
+    )
     ax2.axhline(0, color="black", linewidth=1)
-    ax2.set_title("전신 체액 변화 추이 (하지/체간)", fontsize=12)
-    ax2.set_ylabel("기준선 대비 변화량")
+
+    fail_days = analyzed_df[
+        analyzed_df["night_recovery"].notna() & (analyzed_df["night_recovery"] >= 0)
+    ]
+    if not fail_days.empty:
+        ax2.scatter(
+            fail_days["검사일시"],
+            fail_days["night_recovery"],
+            marker="x",
+            s=100,
+            color="red",
+            zorder=10,
+            label="야간 회복 실패 시점"
+        )
+
+    ax2.set_title("야간 회복 및 전신 체액 변화", fontsize=12)
+    ax2.set_ylabel("변화량")
     ax2.set_xlabel("검사일")
     ax2.grid(True, linestyle="--", alpha=0.35)
     ax2.legend(loc="upper left", bbox_to_anchor=(1, 1))
@@ -784,12 +928,16 @@ def create_figure(analyzed_df):
 # ==========================================
 def build_pdf(patient_name, report_date, latest_row, fig):
     clinician_msg = render_message(latest_row, audience="clinician", patient_name=patient_name)
+    comparison_comment = build_clinician_comparison_comment(latest_row)
+    if comparison_comment:
+        clinician_msg = clinician_msg + "\n\n" + comparison_comment
+
     patient_msg = render_message(latest_row, audience="patient", patient_name=patient_name)
 
     pdf, pdf_font = init_pdf()
 
     pdf.set_font(pdf_font, "", 16)
-    pdf.cell(0, 10, f"LEAP V2 정밀 분석 리포트 - {patient_name}", ln=1, align="C")
+    pdf.cell(0, 10, f"LEAP V3 정밀 분석 리포트 - {patient_name}", ln=1, align="C")
 
     pdf.set_font(pdf_font, "", 11)
     pdf.cell(0, 8, f"분석 기준일: {report_date}", ln=1)
@@ -811,13 +959,17 @@ def build_pdf(patient_name, report_date, latest_row, fig):
     pdf.set_font(pdf_font, "", 13)
     pdf.cell(0, 8, "[핵심 지표]", ln=1)
     pdf.set_font(pdf_font, "", 10)
-    pdf.cell(0, 7, f"- 양측 비율: {fmt_ratio_interp(latest_row['ratio'])}", ln=1)
+    pdf.cell(0, 7, f"- 양측 비율(당일): {fmt_ratio_interp(latest_row['ratio'])}", ln=1)
     pdf.cell(0, 7, f"- 환측 3일 평균 차이: {fmt_diff_interp(latest_row['am_3day_diff'])}", ln=1)
     pdf.cell(0, 7, f"- 하지 3일 평균 차이: {fmt_diff_interp(latest_row['leg_3day_diff'])}", ln=1)
-    pdf.cell(0, 7, f"- 3일간 회복 실패 일수: {fmt_days_interp(latest_row['recovery_fail_3d'])}", ln=1)
-    pdf.cell(0, 7, f"- 환측 7일 추세: {fmt_trend_interp(latest_row['AM_7day_trend'])}", ln=1)
-    pdf.cell(0, 7, f"- 하지 7일 추세: {fmt_trend_interp(latest_row['leg_7day_trend'])}", ln=1)
-    pdf.cell(0, 7, f"- 7일간 회복 실패 일수: {fmt_days_interp(latest_row['fail_7d'])}", ln=1)
+    pdf.cell(0, 7, f"- 이전 3일 대비 환측 변화: {fmt_compare_interp(latest_row['am_3d_vs_prev3d'])}", ln=1)
+    pdf.cell(0, 7, f"- 이전 3일 대비 하지 변화: {fmt_compare_interp(latest_row['leg_3d_vs_prev3d'])}", ln=1)
+    pdf.cell(0, 7, f"- 3일내 야간 회복 실패 일수: {fmt_days_interp(latest_row['recovery_fail_3d'])}", ln=1)
+    pdf.cell(0, 7, f"- 환측 7일 추세(r): {fmt_trend_interp(latest_row['AM_7day_trend'])}", ln=1)
+    pdf.cell(0, 7, f"- 하지 7일 추세(r): {fmt_trend_interp(latest_row['leg_7day_trend'])}", ln=1)
+    pdf.cell(0, 7, f"- 이전 7일 대비 환측 변화: {fmt_compare_interp(latest_row['am_7d_vs_prev7d'])}", ln=1)
+    pdf.cell(0, 7, f"- 이전 7일 대비 하지 변화: {fmt_compare_interp(latest_row['leg_7d_vs_prev7d'])}", ln=1)
+    pdf.cell(0, 7, f"- 7일내 야간 회복 실패 일수: {fmt_days_interp(latest_row['fail_7d'])}", ln=1)
     pdf.cell(0, 7, f"- 7일 변동계수: {fmt_cv_interp(latest_row['cv_7d'])}", ln=1)
     pdf.ln(4)
 
@@ -841,8 +993,8 @@ def build_pdf(patient_name, report_date, latest_row, fig):
 # 11. 메인 앱
 # ==========================================
 if check_password():
-    st.title("🧪 LEAP V2 테스트 시스템")
-    st.markdown("V1을 유지한 상태에서 문구 구조와 해석 체계를 개선하는 테스트 버전입니다.")
+    st.title("🧪 LEAP V3 테스트 시스템")
+    st.markdown("V3 프로토타입 테스트 버전입니다.")
     st.caption("시트명에는 반드시 환측 방향(우측/좌측)을 포함하세요. 예: 홍길동_우측상지")
 
     debug_mode = st.checkbox("디버그 모드", value=True)
@@ -860,12 +1012,12 @@ if check_password():
 
             mode = st.radio(
                 "작업 모드 선택:",
-                ["👤 개별 환자 진료 (V2)", "📦 전체 환자 일괄 출력 (V2)"],
+                ["👤 개별 환자 진료 (V3)", "📦 전체 환자 일괄 출력 (V3)"],
                 horizontal=True
             )
             st.markdown("---")
 
-            if mode == "👤 개별 환자 진료 (V2)":
+            if mode == "👤 개별 환자 진료 (V3)":
                 selected_sheet = st.selectbox("📋 분석할 환자(시트)를 선택하세요:", sheet_names)
                 patient_name = extract_patient_name_from_sheet(selected_sheet)
 
@@ -900,6 +1052,10 @@ if check_password():
                 latest_row = analyzed_df.iloc[-1]
 
                 clinician_msg = render_message(latest_row, audience="clinician", patient_name=patient_name)
+                comparison_comment = build_clinician_comparison_comment(latest_row)
+                if comparison_comment:
+                    clinician_msg = clinician_msg + "\n\n" + comparison_comment
+
                 patient_msg = render_message(latest_row, audience="patient", patient_name=patient_name)
                 sms_msg = " ".join(patient_msg.split("\n\n")[:5])
 
@@ -936,25 +1092,37 @@ if check_password():
 **하지 3일 평균 차이**  
 {fmt_diff_interp(latest_row['leg_3day_diff'])}
 
-**3일간 회복 실패 일수**  
+**이전 3일 대비 환측 변화**  
+{fmt_compare_interp(latest_row['am_3d_vs_prev3d'])}
+
+**이전 3일 대비 하지 변화**  
+{fmt_compare_interp(latest_row['leg_3d_vs_prev3d'])}
+
+**3일내 야간 회복 실패 일수**  
 {fmt_days_interp(latest_row['recovery_fail_3d'])}
 
-**3일 ratio 경고 일수**  
+**3일내 양측 비율 비정상 일수**  
 {fmt_days_interp(latest_row['warn_ratio_3d'])}
 """
                     )
 
                 with col3:
                     st.error(
-                        f"""### 🔴 최근 7일 추세
+                        f"""### 🔴 최근 7일 상태
 
-**환측 7일 추세**  
+**환측 7일 추세 (r)**  
 {fmt_trend_interp(latest_row['AM_7day_trend'])}
 
-**하지 7일 추세**  
+**하지 7일 추세 (r)**  
 {fmt_trend_interp(latest_row['leg_7day_trend'])}
 
-**7일간 회복 실패 일수**  
+**이전 7일 대비 환측 변화**  
+{fmt_compare_interp(latest_row['am_7d_vs_prev7d'])}
+
+**이전 7일 대비 하지 변화**  
+{fmt_compare_interp(latest_row['leg_7d_vs_prev7d'])}
+
+**7일내 야간 회복 실패 일수**  
 {fmt_days_interp(latest_row['fail_7d'])}
 
 **7일 변동계수**  
@@ -972,7 +1140,7 @@ if check_password():
                 st.write(select_message_codes(latest_row))
 
                 st.markdown("### 📈 시계열 근거 그래프")
-                st.caption("환측 오전값은 baseline 상태를, 오후값은 일중 축적 상태를 반영합니다. 하지·체간 변화는 전신 영향 여부를 해석하는 데 사용됩니다.")
+                st.caption("상단은 환측/건측의 양측 비율 패턴을, 하단은 야간 회복과 전신 체액 변화를 보여줍니다.")
                 fig = create_figure(analyzed_df)
                 st.pyplot(fig)
                 plt.close(fig)
@@ -983,8 +1151,10 @@ if check_password():
                     "환측 오전", "환측 오후", "건측 오전",
                     "ratio", "AM_drift", "day_gain", "night_recovery",
                     "am_3day_diff", "leg_3day_diff", "trunk_3day_diff",
+                    "am_3d_vs_prev3d", "leg_3d_vs_prev3d",
                     "recovery_fail_3d", "warn_ratio_3d",
                     "AM_7day_trend", "leg_7day_trend", "trunk_7day_trend",
+                    "am_7d_vs_prev7d", "leg_7d_vs_prev7d",
                     "fail_7d", "am_range_7d", "pm_range_7d", "cv_7d",
                     "하지 평균", "leg_drift", "체간", "trunk_drift",
                     "최종 판정"
@@ -996,15 +1166,15 @@ if check_password():
                 plt.close(fig_for_pdf)
 
                 st.download_button(
-                    label=f"📥 [{patient_name}] V2 리포트 다운로드 (PDF)",
+                    label=f"📥 [{patient_name}] V3 리포트 다운로드 (PDF)",
                     data=pdf_bytes,
-                    file_name=f"정밀분석리포트_V2_{patient_name}_{report_date}.pdf",
+                    file_name=f"정밀분석리포트_V3_{patient_name}_{report_date}.pdf",
                     mime="application/pdf",
-                    key=f"pdf_v2_{patient_name}"
+                    key=f"pdf_v3_{patient_name}"
                 )
 
             else:
-                st.subheader("📦 전체 환자 일괄 분석 및 리포트 자동 생성 (V2)")
+                st.subheader("📦 전체 환자 일괄 분석 및 리포트 자동 생성 (V3)")
 
                 if st.button("▶️ 전체 일괄 분석 실행"):
                     progress_bar = st.progress(0)
@@ -1033,17 +1203,20 @@ if check_password():
 
                                 final_label = latest_row["최종 판정"]
                                 clinician_msg = render_message(latest_row, audience="clinician", patient_name=patient_name_sheet)
+                                comparison_comment = build_clinician_comparison_comment(latest_row)
+                                if comparison_comment:
+                                    clinician_msg = clinician_msg + " " + comparison_comment
 
                                 summary_data.append({
                                     "환자명": patient_name_sheet,
                                     "환측방향": infer_affected_side(sheet),
                                     "최종 판정": final_label,
                                     "위험도": severity_rank(final_label),
-                                    "최근 Ratio": safe_fmt(latest_row["ratio"], ".3f"),
+                                    "최근 양측 비율": safe_fmt(latest_row["ratio"], ".3f"),
                                     "환측 3일 평균 차이": safe_fmt(latest_row["am_3day_diff"]),
-                                    "하지 3일 평균 차이": safe_fmt(latest_row["leg_3day_diff"]),
-                                    "환측 7일 추세": safe_fmt(latest_row["AM_7day_trend"]),
-                                    "하지 7일 추세": safe_fmt(latest_row["leg_7day_trend"]),
+                                    "이전 3일 대비 환측 변화": safe_fmt(latest_row["am_3d_vs_prev3d"]),
+                                    "환측 7일 추세(r)": safe_fmt(latest_row["AM_7day_trend"], ".2f"),
+                                    "이전 7일 대비 환측 변화": safe_fmt(latest_row["am_7d_vs_prev7d"]),
                                     "비고": clinician_msg.replace("\n\n", " ")
                                 })
 
@@ -1051,7 +1224,7 @@ if check_password():
                                 pdf_bytes = build_pdf(patient_name_sheet, report_date, latest_row, fig)
                                 plt.close(fig)
 
-                                pdf_filename = f"리포트_V2_{patient_name_sheet}_{report_date}.pdf"
+                                pdf_filename = f"리포트_V3_{patient_name_sheet}_{report_date}.pdf"
                                 zip_file.writestr(pdf_filename, pdf_bytes)
 
                             except Exception as e:
@@ -1059,7 +1232,7 @@ if check_password():
 
                             progress_bar.progress((i + 1) / len(sheet_names))
 
-                    st.success("✅ 모든 환자의 V2 분석 및 PDF 생성이 완료되었습니다.")
+                    st.success("✅ 모든 환자의 V3 분석 및 PDF 생성이 완료되었습니다.")
                     st.markdown("### 📊 전체 환자 현황 요약판")
 
                     summary_df = pd.DataFrame(summary_data).sort_values(
@@ -1068,9 +1241,9 @@ if check_password():
                     st.dataframe(summary_df, use_container_width=True)
 
                     st.download_button(
-                        label="📦 묶음 리포트 다운로드 (V2 전체 환자 PDF ZIP)",
+                        label="📦 묶음 리포트 다운로드 (V3 전체 환자 PDF ZIP)",
                         data=zip_buffer.getvalue(),
-                        file_name=f"전체환자리포트_V2_{report_date}.zip",
+                        file_name=f"전체환자리포트_V3_{report_date}.zip",
                         mime="application/zip"
                     )
 
