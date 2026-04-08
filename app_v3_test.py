@@ -1035,6 +1035,10 @@ if check_password():
                     st.stop()
 
                 analyzed_df = calculate_metrics(daily_df)
+
+                # 🔍 디버그 확인 (여기!)
+                st.write(analyzed_df[["검사일시", "prev_pm", "night_recovery"]])
+
                 if debug_mode:
                     st.write("4. metrics 완료")
 
