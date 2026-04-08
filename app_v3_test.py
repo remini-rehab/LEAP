@@ -818,27 +818,208 @@ def classify(row):
 
 
 # ==========================================
+# 8-1. V3 스코어링
+# ==========================================
+
+def score_structure(ratio):
+    if pd.isna(ratio):
+        return 0
+    if ratio >= 1.08:
+        return 4
+    elif ratio >= 1.05:
+        return 3
+    elif ratio >= 1.02:
+        return 2
+    elif ratio >= 1.01:
+        return 1
+    return 0
+
+
+def score_recent_change(am_3day_diff):
+    if pd.isna(am_3day_diff):
+        return 0
+    if am_3day_diff >= 0.006:
+        return 4
+    elif am_3day_diff >= 0.004:
+        return 3
+    elif am_3day_diff >= 0.002:
+        return 2
+    elif am_3day_diff > 0:
+        return 1
+    return 0
+
+
+def score_recovery(recovery_fail_3d, fail_7d):
+    score = 0
+    if pd.notna(recovery_fail_3d):
+        if recovery_fail_3d >= 3:
+            score += 3
+        elif recovery_fail_3d >= 2:
+            score += 2
+        elif recovery_fail_3d == 1:
+            score += 1
+
+    if pd.notna(fail_7d):
+        if fail_7d >= 5:
+            score += 1
+        elif fail_7d >= 3:
+            score += 0.5
+
+    return min(int(round(score)), 4)
+
+
+def score_trend(trend_r, cv_7d):
+    score = 0
+
+    if pd.notna(trend_r):
+        if trend_r >= 0.7:
+            score += 3
+        elif trend_r >= 0.5:
+            score += 2
+        elif trend_r >= 0.3:
+            score += 1
+
+    if pd.notna(cv_7d):
+        if cv_7d >= 1.5:
+            score += 1
+        elif cv_7d >= 1.0:
+            score += 0.5
+
+    return min(int(round(score)), 4)
+
+
+def score_systemic(leg_3day_diff, trunk_3day_diff, leg_7day_trend, trunk_7day_trend):
+    score = 0
+
+    for v in [leg_3day_diff, trunk_3day_diff]:
+        if pd.notna(v):
+            if v >= 0.004:
+                score += 2
+            elif v >= 0.002:
+                score += 1
+
+    for r in [leg_7day_trend, trunk_7day_trend]:
+        if pd.notna(r):
+            if r >= 0.5:
+                score += 1
+            elif r >= 0.3:
+                score += 0.5
+
+    return min(int(round(score)), 4)
+
+
+def build_domain_scores(row):
+    return {
+        "양측 비율": score_structure(row.get("ratio", np.nan)),
+        "최근 변화": score_recent_change(row.get("am_3day_diff", np.nan)),
+        "야간 회복": score_recovery(
+            row.get("recovery_fail_3d", np.nan),
+            row.get("fail_7d", np.nan)
+        ),
+        "7일 추세": score_trend(
+            row.get("AM_7day_trend", np.nan),
+            row.get("cv_7d", np.nan)
+        ),
+        "전신 영향": score_systemic(
+            row.get("leg_3day_diff", np.nan),
+            row.get("trunk_3day_diff", np.nan),
+            row.get("leg_7day_trend", np.nan),
+            row.get("trunk_7day_trend", np.nan)
+        ),
+    }
+
+
+def total_domain_score(score_dict):
+    return sum(score_dict.values())
+
+# ==========================================
 # 9. 그래프
 # ==========================================
+
+def create_radar_chart(score_dict):
+    labels = list(score_dict.keys())
+    values = list(score_dict.values())
+
+    values = values + values[:1]
+    angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False).tolist()
+    angles = angles + angles[:1]
+
+    fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
+    ax.plot(angles, values, linewidth=2)
+    ax.fill(angles, values, alpha=0.25)
+
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(labels, fontsize=10)
+
+    ax.set_yticks([0, 1, 2, 3, 4])
+    ax.set_yticklabels(["0", "1", "2", "3", "4"])
+    ax.set_ylim(0, 4)
+
+    ax.set_title("V3 위험도 프로파일", pad=20, fontsize=13, fontweight="bold")
+    return fig
+
 def create_figure(analyzed_df):
     fig, axes = plt.subplots(
-        2, 1, figsize=(12, 8), sharex=True,
-        gridspec_kw={"height_ratios": [2.2, 1]}
+        2, 1,
+        figsize=(13, 10),
+        sharex=True,
+        gridspec_kw={"height_ratios": [2.0, 1.5]}
     )
     ax1, ax2 = axes
 
+    # -----------------------------
+    # 상단: 환측/건측 및 야간 연결선
+    # -----------------------------
     ax1.plot(
         analyzed_df["검사일시"], analyzed_df["환측 오전"],
         marker="o", markersize=7, linewidth=2.2, label="환측 오전값"
     )
     ax1.plot(
         analyzed_df["검사일시"], analyzed_df["환측 오후"],
-        marker="^", linestyle="-", alpha=0.7, label="환측 오후값"
+        marker="^", linestyle="-", alpha=0.8, linewidth=2.0, label="환측 오후값"
     )
     ax1.plot(
         analyzed_df["검사일시"], analyzed_df["건측 오전"],
-        marker="s", linestyle="--", alpha=0.8, label="건측 오전값"
+        marker="s", linestyle="--", alpha=0.8, linewidth=2.0, label="건측 오전값"
     )
+
+    # 범례용 dummy
+    ax1.plot([], [], color="blue", linestyle="--", linewidth=2.0, label="야간 회복 (하강)")
+    ax1.plot([], [], color="gray", linestyle="--", linewidth=1.6, label="야간 회복 (평형)")
+    ax1.plot([], [], color="red", linestyle="--", linewidth=2.4, label="야간 회복 실패 (상승)")
+
+    # 전날 저녁 -> 다음날 아침 연결선
+    for i in range(1, len(analyzed_df)):
+        prev_pm_date = analyzed_df["검사일시"].iloc[i - 1]
+        curr_am_date = analyzed_df["검사일시"].iloc[i]
+
+        prev_pm_val = analyzed_df["환측 오후"].iloc[i - 1]
+        curr_am_val = analyzed_df["환측 오전"].iloc[i]
+
+        day_diff = (curr_am_date - prev_pm_date).days
+
+        if pd.notna(prev_pm_val) and pd.notna(curr_am_val) and day_diff == 1:
+            delta = curr_am_val - prev_pm_val
+
+            if delta <= -0.002:
+                color = "blue"
+                lw = 2.0
+            elif delta >= 0.002:
+                color = "red"
+                lw = 2.4
+            else:
+                color = "gray"
+                lw = 1.6
+
+            ax1.plot(
+                [prev_pm_date, curr_am_date],
+                [prev_pm_val, curr_am_val],
+                linestyle="--",
+                linewidth=lw,
+                color=color,
+                alpha=0.9,
+                zorder=4
+            )
 
     if pd.notna(analyzed_df["baseline_ref"].iloc[0]):
         ax1.axhline(
@@ -870,6 +1051,9 @@ def create_figure(analyzed_df):
     ax1.grid(True, linestyle="--", alpha=0.35)
     ax1.legend(loc="upper left", bbox_to_anchor=(1, 1))
 
+    # -----------------------------
+    # 하단: 야간 회복량 및 전신 변화
+    # -----------------------------
     ax2.plot(
         analyzed_df["검사일시"],
         analyzed_df["night_recovery"],
@@ -894,7 +1078,8 @@ def create_figure(analyzed_df):
         alpha=0.8,
         label="체간 기준선 이탈"
     )
-    ax2.axhline(0, color="black", linewidth=1)
+    ax2.axhline(0, color="black", linewidth=1.5)
+    ax2.set_ylim(-0.01, 0.01)
 
     fail_days = analyzed_df[
         analyzed_df["night_recovery"].notna() & (analyzed_df["night_recovery"] >= 0)
@@ -910,15 +1095,14 @@ def create_figure(analyzed_df):
             label="야간 회복 실패 시점"
         )
 
-    ax2.set_title("야간 회복 및 전신 체액 변화", fontsize=12)
+    ax2.set_title("야간 회복 및 전신 체액 변화", fontsize=12, fontweight="bold")
     ax2.set_ylabel("변화량")
     ax2.set_xlabel("검사일")
     ax2.grid(True, linestyle="--", alpha=0.35)
     ax2.legend(loc="upper left", bbox_to_anchor=(1, 1))
 
-    fig.tight_layout()
+    plt.tight_layout(rect=[0, 0, 1, 0.97])
     return fig
-
 
 # ==========================================
 # 10. PDF
@@ -931,8 +1115,11 @@ def build_pdf(patient_name, report_date, latest_row, fig):
 
     patient_msg = render_message(latest_row, audience="patient", patient_name=patient_name)
 
-    pdf, pdf_font = init_pdf()
+    scores = build_domain_scores(latest_row)
+    total_score = total_domain_score(scores)
+    radar_fig = create_radar_chart(scores)
 
+    pdf, pdf_font = init_pdf()
     pdf.set_font(pdf_font, "", 16)
     pdf.cell(0, 10, f"LEAP V3 정밀 분석 리포트 - {patient_name}", ln=1, align="C")
 
@@ -956,6 +1143,7 @@ def build_pdf(patient_name, report_date, latest_row, fig):
     pdf.set_font(pdf_font, "", 13)
     pdf.cell(0, 8, "[핵심 지표]", ln=1)
     pdf.set_font(pdf_font, "", 10)
+    pdf.cell(0, 7, f"- 총 위험 점수: {total_score}", ln=1)      
     pdf.cell(0, 7, f"- 양측 비율(당일): {fmt_ratio_interp(latest_row['ratio'])}", ln=1)
     pdf.cell(0, 7, f"- 환측 3일 평균 차이: {fmt_diff_interp(latest_row['am_3day_diff'])}", ln=1)
     pdf.cell(0, 7, f"- 하지 3일 평균 차이: {fmt_diff_interp(latest_row['leg_3day_diff'])}", ln=1)
@@ -979,6 +1167,18 @@ def build_pdf(patient_name, report_date, latest_row, fig):
     finally:
         if tmp_path and os.path.exists(tmp_path):
             os.remove(tmp_path)
+
+    radar_tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
+            radar_tmp_path = tmpfile.name
+            radar_fig.savefig(radar_tmp_path, format="png", bbox_inches="tight", dpi=180)
+        pdf.ln(4)
+        pdf.image(radar_tmp_path, x=35, y=None, w=140)
+    finally:
+        if radar_tmp_path and os.path.exists(radar_tmp_path):
+            os.remove(radar_tmp_path)
+        plt.close(radar_fig)
 
     try:
         return pdf.output(dest="S").encode("latin-1")
@@ -1035,9 +1235,6 @@ if check_password():
                     st.stop()
 
                 analyzed_df = calculate_metrics(daily_df)
-
-                # 🔍 디버그 확인 (여기!)
-                st.write(analyzed_df[["검사일시", "prev_pm", "night_recovery"]])
 
                 if debug_mode:
                     st.write("4. metrics 완료")
@@ -1145,6 +1342,28 @@ if check_password():
                 fig = create_figure(analyzed_df)
                 st.pyplot(fig)
                 plt.close(fig)
+                scores = build_domain_scores(latest_row)
+                total_score = total_domain_score(scores)
+
+                st.markdown("### 🎯 V3 스코어링 요약")
+
+                c1, c2, c3 = st.columns(3)
+                with c1:
+                     st.metric("총 위험 점수", total_score)
+                with c2:
+                     st.metric("양측 비율", scores["양측 비율"])
+                with c3:
+                     st.metric("야간 회복", scores["야간 회복"])
+
+                c4, c5 = st.columns(2)
+                with c4:
+                     st.metric("7일 추세", scores["7일 추세"])
+                with c5:
+                     st.metric("전신 영향", scores["전신 영향"])
+
+                radar_fig = create_radar_chart(scores)
+                st.pyplot(radar_fig)
+                plt.close(radar_fig)
 
                 st.markdown("### 📋 상세 수치")
                 view_cols = [
