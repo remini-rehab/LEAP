@@ -944,18 +944,18 @@ def create_radar_chart(score_dict):
     angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False).tolist()
     angles = angles + angles[:1]
 
-    fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
+    fig, ax = plt.subplots(figsize=(4.0, 4.0), subplot_kw=dict(polar=True))
     ax.plot(angles, values, linewidth=2)
     ax.fill(angles, values, alpha=0.25)
 
     ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(labels, fontsize=10)
+    ax.set_xticklabels(labels, fontsize=9)
 
     ax.set_yticks([0, 1, 2, 3, 4])
-    ax.set_yticklabels(["0", "1", "2", "3", "4"])
+    ax.set_yticklabels(["0", "1", "2", "3", "4"], fontsize=8)
     ax.set_ylim(0, 4)
 
-    ax.set_title("V3 위험도 프로파일", pad=20, fontsize=13, fontweight="bold")
+    ax.set_title("V3 위험도 프로파일", fontsize=10, pad=10)
     return fig
 
 def create_figure(analyzed_df):
@@ -1347,23 +1347,23 @@ if check_password():
 
                 st.markdown("### 🎯 V3 스코어링 요약")
 
-                c1, c2, c3 = st.columns(3)
+                c1, c2 = st.columns([1.2, 1])
+
                 with c1:
-                     st.metric("총 위험 점수", total_score)
+                     st.markdown(f"""
+                     <div style="font-size:15px; line-height:1.9;">
+                         <b>총 위험 점수</b>: <span style="font-size:22px;">{total_score}</span><br>
+                         <b>양측 비율</b>: {scores["양측 비율"]}<br>
+                         <b>야간 회복</b>: {scores["야간 회복"]}<br>
+                         <b>7일 추세</b>: {scores["7일 추세"]}<br>
+                         <b>전신 영향</b>: {scores["전신 영향"]}
+                     </div>
+                     """, unsafe_allow_html=True)
+
                 with c2:
-                     st.metric("양측 비율", scores["양측 비율"])
-                with c3:
-                     st.metric("야간 회복", scores["야간 회복"])
-
-                c4, c5 = st.columns(2)
-                with c4:
-                     st.metric("7일 추세", scores["7일 추세"])
-                with c5:
-                     st.metric("전신 영향", scores["전신 영향"])
-
-                radar_fig = create_radar_chart(scores)
-                st.pyplot(radar_fig)
-                plt.close(radar_fig)
+                     radar_fig = create_radar_chart(scores)
+                     st.pyplot(radar_fig, use_container_width=False)
+                     plt.close(radar_fig)
 
                 st.markdown("### 📋 상세 수치")
                 view_cols = [
