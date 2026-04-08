@@ -575,11 +575,7 @@ def calculate_metrics(df, baseline_days=3):
     df["day_gain"] = df["환측 오후"] - df["환측 오전"]
 
     df["prev_pm"] = df["환측 오후"].shift(1)
-    df["night_recovery"] = np.where(
-        df["is_consecutive_day"],
-        df["환측 오전"] - df["prev_pm"],
-        np.nan
-    )
+    df["night_recovery"] = df["환측 오전"] - df["prev_pm"]
 
     df["recovery_fail"] = np.where(
         df["night_recovery"].isna(),
@@ -878,7 +874,8 @@ def create_figure(analyzed_df):
         analyzed_df["검사일시"],
         analyzed_df["night_recovery"],
         marker="D",
-        linewidth=2.0,
+        linewidth=2.5,
+        color="purple",
         label="야간 회복량"
     )
     ax2.plot(
